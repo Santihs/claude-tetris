@@ -30,4 +30,7 @@ jobs:
                problema: causa probable, archivos/áreas del código afectadas,
                y qué se necesitaría para resolverlo. No escribas ni propongas
                código todavía, solo diagnóstico.
-          claude_args: '--allowed-tools "Bash(gh issue edit:*),Bash(gh issue comment:*)"'
+               El comentario tiene que estar en formato MarkDown que GitHub
+               pueda entender.
+          claude_args: |
+            --allowed-tools "Bash(gh issue edit:*),Bash(gh issue comment:*),Bash(gh issue view:*),Bash(gh label list:*),Bash(gh api:*)"
