@@ -1,7 +1,7 @@
 import {
-  COLS, PIECES, STANDARD_TYPES, PENTOMINO_TYPES,
+  COLS, ROWS, PIECES, STANDARD_TYPES, PENTOMINO_TYPES,
   REWARD_PIECE_TYPE, CHALLENGE_PIECE_TYPE, CHALLENGE_PIECE_INTERVAL, PENTOMINO_ROLL_CHANCE,
-  POWER_UP_TYPE_BY_KIND,
+  POWER_UP_TYPE_BY_KIND, T_PIECE_TYPE,
 } from './constants';
 import { collide } from './board';
 import { powerUpKindForType, randomPowerUpKind } from './powerups';
@@ -63,14 +63,36 @@ export function rotateCW(shape: Shape): Shape {
   return result;
 }
 
-export function tryRotate(board: Board, current: Piece): void {
+export interface RotateResult {
+  rotated: boolean;
+  isTSpin: boolean;
+}
+
+/**
+ * Standard 3-of-4-corner T-spin heuristic, checked against the piece's 3x3
+ * bounding box (T is always 3x3, in every rotation). Only meaningful for
+ * type T; callers should gate on current.type === T_PIECE_TYPE.
+ */
+function countOccupiedCorners(board: Board, current: Piece): number {
+  const corners = [[0, 0], [2, 0], [0, 2], [2, 2]];
+  let count = 0;
+  for (const [dx, dy] of corners) {
+    const nx = current.x + dx, ny = current.y + dy;
+    if (nx < 0 || nx >= COLS || ny >= ROWS || (ny >= 0 && board[ny][nx])) count++;
+  }
+  return count;
+}
+
+export function tryRotate(board: Board, current: Piece): RotateResult {
   const rotated = rotateCW(current.shape);
   const kicks = [0, -1, 1, -2, 2];
   for (const kick of kicks) {
     if (!collide(board, rotated, current.x + kick, current.y)) {
       current.shape = rotated;
       current.x += kick;
-      return;
+      const isTSpin = current.type === T_PIECE_TYPE && countOccupiedCorners(board, current) >= 3;
+      return { rotated: true, isTSpin };
     }
   }
+  return { rotated: false, isTSpin: false };
 }

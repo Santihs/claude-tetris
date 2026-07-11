@@ -17,6 +17,7 @@ export function holdPiece(game: Game): void {
   }
 
   game.holdUsedThisTurn = true;
+  game.lastActionWasRotation = false;
   game.drawHold();
 
   if (collide(game.board, game.current.shape, game.current.x, game.current.y)) {

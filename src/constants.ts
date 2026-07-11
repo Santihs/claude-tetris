@@ -49,6 +49,7 @@ export const PIECES: (Shape | null)[] = [
 export const LINE_SCORES = [0, 100, 300, 500, 800];
 
 export const STANDARD_TYPES = [1, 2, 3, 4, 5, 6, 7];
+export const T_PIECE_TYPE = 3;
 export const PENTOMINO_TYPES = [8, 9, 10];
 export const REWARD_PIECE_TYPE = 11;
 export const CHALLENGE_PIECE_TYPE = 12;

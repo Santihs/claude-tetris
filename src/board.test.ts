@@ -84,4 +84,25 @@ describe('clearLines', () => {
     const highLevelResult = clearLines(board2, 990, 100);
     expect(highLevelResult.dropIntervalAfter).toBe(100);
   });
+
+  it('reports isPerfectClear when clearing empties the whole board', () => {
+    const board = createBoard();
+    board[ROWS - 1] = new Array(COLS).fill(1);
+    const result = clearLines(board, 0, 1);
+    expect(result.isPerfectClear).toBe(true);
+  });
+
+  it('does not report isPerfectClear when other rows remain', () => {
+    const board = createBoard();
+    board[ROWS - 1] = new Array(COLS).fill(1);
+    board[ROWS - 2][0] = 1;
+    const result = clearLines(board, 0, 1);
+    expect(result.isPerfectClear).toBe(false);
+  });
+
+  it('does not report isPerfectClear when nothing was cleared, even on an empty board', () => {
+    const board = createBoard();
+    const result = clearLines(board, 0, 1);
+    expect(result.isPerfectClear).toBe(false);
+  });
 });

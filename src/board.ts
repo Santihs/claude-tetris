@@ -31,6 +31,7 @@ export interface ClearLinesResult {
   linesAfter: number;
   levelAfter: number;
   dropIntervalAfter: number;
+  isPerfectClear: boolean;
 }
 
 export function clearLines(board: Board, lines: number, level: number): ClearLinesResult {
@@ -47,11 +48,13 @@ export function clearLines(board: Board, lines: number, level: number): ClearLin
   let levelAfter = level;
   let dropIntervalAfter = Math.max(100, 1000 - (level - 1) * 90);
   let scoreDelta = 0;
+  let isPerfectClear = false;
   if (cleared) {
     linesAfter = lines + cleared;
     scoreDelta = (LINE_SCORES[cleared] || 0) * level;
     levelAfter = Math.floor(linesAfter / 10) + 1;
     dropIntervalAfter = Math.max(100, 1000 - (levelAfter - 1) * 90);
+    isPerfectClear = board.every(row => row.every(v => v === 0));
   }
-  return { cleared, scoreDelta, linesAfter, levelAfter, dropIntervalAfter };
+  return { cleared, scoreDelta, linesAfter, levelAfter, dropIntervalAfter, isPerfectClear };
 }

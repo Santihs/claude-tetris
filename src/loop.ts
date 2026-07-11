@@ -3,8 +3,11 @@ import { randomPiece, selectNextPieceType } from './pieces';
 import { applyPowerUpEffect } from './powerups';
 import { draw, drawPiecePreview, ghostY } from './render';
 import { updateHUD, type HudRefs } from './hud';
-import { hardDropPoints, SOFT_DROP_POINTS } from './scoring';
-import { POWER_UP_LINE_INTERVAL } from './constants';
+import {
+  hardDropPoints, SOFT_DROP_POINTS,
+  calculateComboBonus, calculateTSpinBonus, calculateB2BBonus, calculatePerfectClearBonus,
+} from './scoring';
+import { POWER_UP_LINE_INTERVAL, T_PIECE_TYPE } from './constants';
 import type { Board, Piece } from './types';
 
 export interface GameRefs extends HudRefs {
@@ -16,6 +19,7 @@ export interface GameRefs extends HudRefs {
   holdCtx: CanvasRenderingContext2D;
   holdSection: HTMLElement;
   powerUpProgressEl: HTMLElement;
+  comboCalloutEl: HTMLElement;
   overlay: HTMLElement;
   overlayTitle: HTMLElement;
   overlayScore: HTMLElement;
@@ -32,6 +36,10 @@ export class Game {
   linesUntilPowerUp = POWER_UP_LINE_INTERVAL;
   powerUpReady = false;
   freezeUntil: number | null = null;
+  comboCount = 0;
+  lastClearWasTetris = false;
+  lastActionWasRotation = false;
+  lastTSpinFlag = false;
   score = 0;
   lines = 0;
   level = 1;
@@ -85,23 +93,63 @@ export class Game {
   }
 
   lockPiece(): void {
+    const isTSpin = this.current.type === T_PIECE_TYPE && this.lastActionWasRotation && this.lastTSpinFlag;
+
     merge(this.board, this.current.shape, this.current.x, this.current.y);
     if (this.current.powerUpKind) {
       const effect = applyPowerUpEffect(this.board, this.current.powerUpKind, this.current.x, this.current.y, performance.now());
       if (effect.freezeUntil) this.freezeUntil = effect.freezeUntil;
     }
     const result = clearLines(this.board, this.lines, this.level);
+
     if (result.cleared) {
       this.lines = result.linesAfter;
-      this.score += result.scoreDelta;
       this.level = result.levelAfter;
       this.dropInterval = result.dropIntervalAfter;
-      this.updateHUD();
-      if (result.cleared === 4) this.pendingRewardPiece = true;
+
+      this.comboCount++;
+      const isTetris = result.cleared === 4;
+      const isBackToBack = isTetris && this.lastClearWasTetris;
+
+      let bonus = result.scoreDelta;
+      bonus += calculateComboBonus(this.comboCount, this.level);
+      if (isTSpin) bonus += calculateTSpinBonus(result.cleared, this.level);
+      if (isBackToBack) bonus += calculateB2BBonus(true, this.level);
+      if (result.isPerfectClear) bonus += calculatePerfectClearBonus(this.level);
+      this.score += bonus;
+
+      this.lastClearWasTetris = isTetris;
+      if (isTetris) this.pendingRewardPiece = true;
       this.linesUntilPowerUp = Math.max(0, this.linesUntilPowerUp - result.cleared);
       if (this.linesUntilPowerUp === 0) this.powerUpReady = true;
+
+      this.showCombo(isTSpin, isBackToBack, result.isPerfectClear);
+      this.updateHUD();
+    } else {
+      this.comboCount = 0;
+      this.lastClearWasTetris = false;
     }
+
+    this.lastActionWasRotation = false;
+    this.lastTSpinFlag = false;
     this.spawn();
+  }
+
+  private showCombo(isTSpin: boolean, isBackToBack: boolean, isPerfectClear: boolean): void {
+    const parts: string[] = [];
+    if (isTSpin) parts.push('T-SPIN');
+    if (isBackToBack) parts.push('BACK-TO-BACK');
+    if (isPerfectClear) parts.push('PERFECT CLEAR');
+    if (this.comboCount > 1) parts.push(`COMBO x${this.comboCount - 1}`);
+    if (parts.length === 0) return;
+
+    const el = this.refs.comboCalloutEl;
+    el.textContent = parts.join(' · ');
+    el.classList.remove('show');
+    // force reflow so re-triggering the fade restarts the transition
+    void el.offsetWidth;
+    el.classList.add('show');
+    window.setTimeout(() => el.classList.remove('show'), 900);
   }
 
   ghostY(): number {
@@ -171,6 +219,7 @@ export class Game {
         this.dropAccum = 0;
         if (!collide(this.board, this.current.shape, this.current.x, this.current.y + 1)) {
           this.current.y++;
+          this.lastActionWasRotation = false;
         } else {
           this.lockPiece();
         }
@@ -198,6 +247,10 @@ export class Game {
     this.linesUntilPowerUp = POWER_UP_LINE_INTERVAL;
     this.powerUpReady = false;
     this.freezeUntil = null;
+    this.comboCount = 0;
+    this.lastClearWasTetris = false;
+    this.lastActionWasRotation = false;
+    this.lastTSpinFlag = false;
     this.next = randomPiece();
     this.spawn();
     this.drawHold();

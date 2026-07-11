@@ -39,13 +39,42 @@ describe('tryRotate', () => {
     expect(current.x).not.toBe(8);
   });
 
-  it('no-ops when no kick offset fits', () => {
+  it('no-ops when no kick offset fits, and reports rotated:false', () => {
     const board = createBoard();
     for (let r = 0; r < board.length; r++) for (let c = 0; c < board[r].length; c++) board[r][c] = 9;
     const current: Piece = { type: 3, shape: [[0, 3, 0], [3, 3, 3], [0, 0, 0]], x: 4, y: 0 };
     const before = JSON.stringify(current.shape);
-    tryRotate(board, current);
+    const result = tryRotate(board, current);
     expect(JSON.stringify(current.shape)).toBe(before);
+    expect(result).toEqual({ rotated: false, isTSpin: false });
+  });
+
+  it('flags a T-spin when 3 of the 4 bounding-box corners are occupied', () => {
+    const board = createBoard();
+    board[3][3] = 1; // top-left corner
+    board[3][5] = 1; // top-right corner
+    board[5][3] = 1; // bottom-left corner (bottom-right left open)
+    const current: Piece = { type: 3, shape: [[0, 3, 0], [3, 3, 3], [0, 0, 0]], x: 3, y: 3 };
+    const result = tryRotate(board, current);
+    expect(result.rotated).toBe(true);
+    expect(result.isTSpin).toBe(true);
+  });
+
+  it('does not flag a T-spin in open space (0 corners occupied)', () => {
+    const board = createBoard();
+    const current: Piece = { type: 3, shape: [[0, 3, 0], [3, 3, 3], [0, 0, 0]], x: 3, y: 3 };
+    const result = tryRotate(board, current);
+    expect(result.isTSpin).toBe(false);
+  });
+
+  it('never flags a T-spin for a non-T piece, even with 3 corners occupied', () => {
+    const board = createBoard();
+    board[3][3] = 1;
+    board[3][5] = 1;
+    board[5][3] = 1;
+    const current: Piece = { type: 2, shape: [[2, 2], [2, 2]], x: 3, y: 3 };
+    const result = tryRotate(board, current);
+    expect(result.isTSpin).toBe(false);
   });
 
   it('never collides on spawn for every piece type, standard and special', () => {
