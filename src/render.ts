@@ -94,4 +94,27 @@ export function drawPiecePreview(
       drawBlock(ctx, offX + c, offY + r, shape[r][c], cell);
 }
 
+/** Stacks small previews of each piece vertically in one canvas - used for the "peek next" skill. */
+export function drawQueueStrip(
+  ctx: CanvasRenderingContext2D,
+  canvas: HTMLCanvasElement,
+  pieces: Piece[],
+): void {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (pieces.length === 0) return;
+  const slotHeight = canvas.height / pieces.length;
+  const box = 4;
+  const cell = Math.min(slotHeight, canvas.width) / box;
+  pieces.forEach((piece, i) => {
+    const shape = piece.shape;
+    const offX = Math.floor((box - shape[0].length) / 2);
+    const offY = Math.floor((box - shape.length) / 2);
+    const baseY = (i * slotHeight) / cell;
+    for (let r = 0; r < shape.length; r++)
+      for (let c = 0; c < shape[r].length; c++)
+        if (shape[r][c])
+          drawBlock(ctx, offX + c, baseY + offY + r, shape[r][c], cell);
+  });
+}
+
 export { ghostY };

@@ -7,8 +7,8 @@ export function holdPiece(game: Game): void {
 
   if (game.hold === null) {
     game.hold = spawnOrientation(game.current.type);
-    game.current = game.next;
-    game.next = randomPiece();
+    game.current = game.queue.shift()!;
+    game.queue.push(randomPiece());
     game.drawNext();
   } else {
     const heldType = game.hold.type;

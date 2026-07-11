@@ -12,6 +12,11 @@ const holdCtx = holdCanvas.getContext('2d')!;
 const holdSection = document.getElementById('hold-section')!;
 const powerUpProgressEl = document.getElementById('powerup-progress')!;
 const comboCalloutEl = document.getElementById('combo-callout')!;
+const skillBarFillEl = document.getElementById('skill-bar-fill')!;
+const skillOverlay = document.getElementById('skill-overlay')!;
+const queuePreviewCanvas = document.getElementById('queue-preview-canvas') as HTMLCanvasElement;
+const queuePreviewCtx = queuePreviewCanvas.getContext('2d')!;
+const queuePreviewSection = document.getElementById('queue-preview-section')!;
 const scoreEl = document.getElementById('score')!;
 const linesEl = document.getElementById('lines')!;
 const levelEl = document.getElementById('level')!;
@@ -25,6 +30,7 @@ const themeIcon = document.getElementById('theme-icon')!;
 const refs: GameRefs = {
   canvas, ctx, nextCanvas, nextCtx,
   holdCanvas, holdCtx, holdSection, powerUpProgressEl, comboCalloutEl,
+  skillBarFillEl, skillOverlay, queuePreviewCanvas, queuePreviewCtx, queuePreviewSection,
   scoreEl, linesEl, levelEl,
   overlay, overlayTitle, overlayScore,
 };

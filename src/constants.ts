@@ -73,3 +73,8 @@ export const POWER_UP_KIND_BY_TYPE: Record<number, PowerUpKind> = {
 export const POWER_UP_TYPES = Object.values(POWER_UP_TYPE_BY_KIND);
 export const POWER_UP_LINE_INTERVAL = 5;
 export const FREEZE_DURATION_MS = 5000;
+
+export const QUEUE_LOOKAHEAD = 5;
+export const SKILL_ENERGY_MAX = 10;
+export const SLOW_TIME_DURATION_MS = 10000;
+export const PEEK_DURATION_MS = 8000;

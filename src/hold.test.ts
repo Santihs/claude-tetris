@@ -8,7 +8,7 @@ function makeGame(): Game {
   return {
     board: createBoard(),
     current: spawnOrientation(3), // T
-    next: spawnOrientation(1),    // I
+    queue: [spawnOrientation(1)], // I
     hold: null,
     holdUsedThisTurn: false,
     gameOver: false,
@@ -21,7 +21,7 @@ function makeGame(): Game {
 describe('holdPiece', () => {
   it('first use: stores current, pulls next as current', () => {
     const game = makeGame();
-    const originalNext = game.next;
+    const originalNext = game.queue[0];
     holdPiece(game);
     expect(game.hold?.type).toBe(3);
     expect(game.current).toBe(originalNext);

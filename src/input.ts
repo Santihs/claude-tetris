@@ -1,11 +1,18 @@
 import { collide } from './board';
 import { tryRotate } from './pieces';
 import { holdPiece } from './hold';
+import { applySkill, SKILL_BY_DIGIT } from './skills';
 import type { Game } from './loop';
 
 export function bindInput(game: Game): void {
   document.addEventListener('keydown', e => {
+    if (game.skillMenuOpen) {
+      const skillId = SKILL_BY_DIGIT[e.code];
+      if (skillId) applySkill(game, skillId);
+      return;
+    }
     if (e.code === 'KeyP') { game.togglePause(); return; }
+    if (e.code === 'KeyV') { game.openSkillMenu(); return; }
     if (game.paused || game.gameOver) return;
     switch (e.code) {
       case 'ArrowLeft':
