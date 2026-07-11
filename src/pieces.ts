@@ -1,4 +1,7 @@
-import { COLS, PIECES } from './constants';
+import {
+  COLS, PIECES, STANDARD_TYPES, PENTOMINO_TYPES,
+  REWARD_PIECE_TYPE, CHALLENGE_PIECE_TYPE, CHALLENGE_PIECE_INTERVAL, PENTOMINO_ROLL_CHANCE,
+} from './constants';
 import { collide } from './board';
 import type { Board, Piece, Shape } from './types';
 
@@ -6,15 +9,41 @@ export function centeredX(shape: Shape): number {
   return Math.floor(COLS / 2) - Math.floor(shape[0].length / 2);
 }
 
-export function randomPiece(): Piece {
-  const type = Math.floor(Math.random() * 7) + 1;
-  const shape = (PIECES[type] as Shape).map(row => [...row]);
-  return { type, shape, x: centeredX(shape), y: 0 };
+function pickWeightedType(): number {
+  if (Math.random() < PENTOMINO_ROLL_CHANCE) {
+    return PENTOMINO_TYPES[Math.floor(Math.random() * PENTOMINO_TYPES.length)];
+  }
+  return STANDARD_TYPES[Math.floor(Math.random() * STANDARD_TYPES.length)];
 }
 
 export function spawnOrientation(type: number): Piece {
   const shape = (PIECES[type] as Shape).map(row => [...row]);
   return { type, shape, x: centeredX(shape), y: 0 };
+}
+
+export function randomPiece(forcedType?: number): Piece {
+  return spawnOrientation(forcedType ?? pickWeightedType());
+}
+
+export interface NextPieceSelection {
+  type: number;
+  pendingRewardPiece: boolean;
+  pieceSpawnCount: number;
+}
+
+/**
+ * Priority order for the piece that will become `next`: Tetris-reward > challenge-interval > standard/pentomino roll.
+ * Pure function so the spawn-selection priority is unit-testable without the DOM/canvas-bound Game class.
+ */
+export function selectNextPieceType(pendingRewardPiece: boolean, pieceSpawnCount: number): NextPieceSelection {
+  if (pendingRewardPiece) {
+    return { type: REWARD_PIECE_TYPE, pendingRewardPiece: false, pieceSpawnCount };
+  }
+  const nextCount = pieceSpawnCount + 1;
+  if (nextCount % CHALLENGE_PIECE_INTERVAL === 0) {
+    return { type: CHALLENGE_PIECE_TYPE, pendingRewardPiece: false, pieceSpawnCount: nextCount };
+  }
+  return { type: pickWeightedType(), pendingRewardPiece: false, pieceSpawnCount: nextCount };
 }
 
 export function rotateCW(shape: Shape): Shape {

@@ -1,5 +1,5 @@
 import { collide, createBoard, merge, clearLines } from './board';
-import { randomPiece } from './pieces';
+import { randomPiece, selectNextPieceType } from './pieces';
 import { draw, drawPiecePreview, ghostY } from './render';
 import { updateHUD, type HudRefs } from './hud';
 import { hardDropPoints, SOFT_DROP_POINTS } from './scoring';
@@ -24,6 +24,8 @@ export class Game {
   next!: Piece;
   hold: Piece | null = null;
   holdUsedThisTurn = false;
+  pendingRewardPiece = false;
+  pieceSpawnCount = 0;
   score = 0;
   lines = 0;
   level = 1;
@@ -39,7 +41,10 @@ export class Game {
 
   spawn(): void {
     this.current = this.next;
-    this.next = randomPiece();
+    const selection = selectNextPieceType(this.pendingRewardPiece, this.pieceSpawnCount);
+    this.pendingRewardPiece = selection.pendingRewardPiece;
+    this.pieceSpawnCount = selection.pieceSpawnCount;
+    this.next = randomPiece(selection.type);
     this.holdUsedThisTurn = false;
     this.updateHoldPanel();
     if (collide(this.board, this.current.shape, this.current.x, this.current.y)) {
@@ -71,6 +76,7 @@ export class Game {
       this.level = result.levelAfter;
       this.dropInterval = result.dropIntervalAfter;
       this.updateHUD();
+      if (result.cleared === 4) this.pendingRewardPiece = true;
     }
     this.spawn();
   }
@@ -155,6 +161,8 @@ export class Game {
     this.lastTime = performance.now();
     this.hold = null;
     this.holdUsedThisTurn = false;
+    this.pendingRewardPiece = false;
+    this.pieceSpawnCount = 0;
     this.next = randomPiece();
     this.spawn();
     this.drawHold();
