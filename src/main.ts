@@ -2,6 +2,7 @@ import './style.css';
 import { Game, type GameRefs } from './loop';
 import { bindInput } from './input';
 import { initTheme, toggleTheme } from './theme';
+import type { ObjectiveId } from './challenge';
 
 const canvas = document.getElementById('board') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d')!;
@@ -17,6 +18,10 @@ const skillOverlay = document.getElementById('skill-overlay')!;
 const queuePreviewCanvas = document.getElementById('queue-preview-canvas') as HTMLCanvasElement;
 const queuePreviewCtx = queuePreviewCanvas.getContext('2d')!;
 const queuePreviewSection = document.getElementById('queue-preview-section')!;
+const objectiveSection = document.getElementById('objective-section')!;
+const objectiveLabelEl = document.getElementById('objective-label')!;
+const objectiveValueEl = document.getElementById('objective-value')!;
+const modeSelect = document.getElementById('mode-select')!;
 const scoreEl = document.getElementById('score')!;
 const linesEl = document.getElementById('lines')!;
 const levelEl = document.getElementById('level')!;
@@ -31,14 +36,26 @@ const refs: GameRefs = {
   canvas, ctx, nextCanvas, nextCtx,
   holdCanvas, holdCtx, holdSection, powerUpProgressEl, comboCalloutEl,
   skillBarFillEl, skillOverlay, queuePreviewCanvas, queuePreviewCtx, queuePreviewSection,
+  objectiveSection, objectiveLabelEl, objectiveValueEl, modeSelect,
   scoreEl, linesEl, levelEl,
   overlay, overlayTitle, overlayScore,
 };
 
 const game = new Game(refs);
 
-restartBtn.addEventListener('click', () => game.init());
+restartBtn.addEventListener('click', () => game.restart());
 bindInput(game);
+
+for (const btn of modeSelect.querySelectorAll<HTMLButtonElement>('.mode-btn')) {
+  btn.addEventListener('click', () => {
+    const mode = btn.dataset.mode!;
+    if (mode === 'endless') {
+      game.init('endless');
+    } else {
+      game.init('challenge', mode as ObjectiveId);
+    }
+  });
+}
 
 themeToggleBtn.addEventListener('click', () => {
   toggleTheme({ themeToggleBtn, themeIcon }, gridLineColor => {
@@ -51,5 +68,3 @@ initTheme({ themeToggleBtn, themeIcon }, gridLineColor => {
   game.gridLineColor = gridLineColor;
   if (game.board) game.draw();
 });
-
-game.init();

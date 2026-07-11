@@ -23,6 +23,7 @@ export const COLORS: (string | null)[] = [
   '#80deea', // 15 power-up: freeze - icy cyan
   '#a1887f', // 16 power-up: gravity - brown
   '#ce93d8', // 17 power-up: dye - orchid
+  '#546e7a', // 18 garbage / preset blocks - neutral grey
 ];
 
 export const PIECES: (Shape | null)[] = [
@@ -78,3 +79,13 @@ export const QUEUE_LOOKAHEAD = 5;
 export const SKILL_ENERGY_MAX = 10;
 export const SLOW_TIME_DURATION_MS = 10000;
 export const PEEK_DURATION_MS = 8000;
+
+export const GARBAGE_COLOR = 18;
+export const SPRINT_TARGET_LINES = 40;
+export const SPRINT_TIME_LIMIT_MS = 120000;
+export const GARBAGE_INTERVAL_MS = 10000;
+export const PRESET_BLOCKS_PATTERN: [number, number][] = [
+  [19, 1], [19, 2], [19, 3], [19, 6], [19, 7], [19, 8],
+  [18, 2], [18, 3], [18, 7], [18, 8],
+  [17, 3], [17, 7],
+];

@@ -259,7 +259,8 @@ kbd {
   color: var(--accent);
 }
 
-#restart-btn {
+#restart-btn,
+.mode-btn {
   margin-top: 8px;
   background: var(--accent);
   color: var(--restart-text);
@@ -273,6 +274,14 @@ kbd {
   transition: background 0.15s;
 }
 
-#restart-btn:hover {
+#restart-btn:hover,
+.mode-btn:hover {
   background: #9bbdff;
+}
+
+.mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
 }

@@ -10,7 +10,13 @@ import {
 import {
   POWER_UP_LINE_INTERVAL, T_PIECE_TYPE, QUEUE_LOOKAHEAD, SKILL_ENERGY_MAX,
 } from './constants';
+import {
+  startObjective, updateObjective, insertGarbageRow, applyPresetBlocks,
+  type ObjectiveId, type ObjectiveState,
+} from './challenge';
 import type { Board, Piece } from './types';
+
+export type GameMode = 'endless' | 'challenge';
 
 export interface GameRefs extends HudRefs {
   canvas: HTMLCanvasElement;
@@ -27,6 +33,10 @@ export interface GameRefs extends HudRefs {
   queuePreviewCanvas: HTMLCanvasElement;
   queuePreviewCtx: CanvasRenderingContext2D;
   queuePreviewSection: HTMLElement;
+  objectiveSection: HTMLElement;
+  objectiveLabelEl: HTMLElement;
+  objectiveValueEl: HTMLElement;
+  modeSelect: HTMLElement;
   overlay: HTMLElement;
   overlayTitle: HTMLElement;
   overlayScore: HTMLElement;
@@ -71,6 +81,9 @@ export class Game {
   skillMenuOpen = false;
   undoSnapshot: UndoSnapshot | null = null;
   private pendingUndoSnapshot: UndoSnapshot | null = null;
+  gameMode: GameMode = 'endless';
+  objective: ObjectiveState | null = null;
+  started = false;
   score = 0;
   lines = 0;
   level = 1;
@@ -287,13 +300,18 @@ export class Game {
   endGame(): void {
     this.gameOver = true;
     cancelAnimationFrame(this.animId);
-    this.refs.overlayTitle.textContent = 'GAME OVER';
+    if (this.objective) {
+      this.objective.status = 'lost';
+      this.refs.overlayTitle.textContent = 'DESAFÍO FALLIDO';
+    } else {
+      this.refs.overlayTitle.textContent = 'GAME OVER';
+    }
     this.refs.overlayScore.textContent = `Puntuación: ${this.score.toLocaleString()}`;
     this.refs.overlay.classList.remove('hidden');
   }
 
   togglePause(): void {
-    if (this.gameOver || this.skillMenuOpen) return;
+    if (!this.started || this.gameOver || this.skillMenuOpen) return;
     this.paused = !this.paused;
     if (!this.paused) {
       this.lastTime = performance.now();
@@ -356,12 +374,31 @@ export class Game {
       }
     }
     this.drawQueuePreviewIfPeeking();
+
+    if (this.objective && this.objective.status === 'active' && !this.gameOver) {
+      const result = updateObjective(this.objective, ts, this.lines);
+      this.objective.status = result.status;
+      this.objective.elapsedMs = result.elapsedMs;
+      this.objective.nextGarbageAt = result.nextGarbageAt;
+      if (result.garbageDue) {
+        insertGarbageRow(this.board);
+        if (collide(this.board, this.current.shape, this.current.x, this.current.y)) {
+          this.objective.status = 'lost';
+        }
+      }
+      this.updateObjectiveHUD();
+      if (this.objective.status !== 'active') {
+        this.endChallenge();
+        return;
+      }
+    }
+
     if (this.gameOver) return;
     this.draw();
     this.animId = requestAnimationFrame(this.loop);
   };
 
-  init(): void {
+  init(mode: GameMode = 'endless', objectiveId?: ObjectiveId): void {
     this.board = createBoard();
     this.score = 0;
     this.lines = 0;
@@ -388,8 +425,16 @@ export class Game {
     this.skillReady = false;
     this.skillMenuOpen = false;
     this.undoSnapshot = null;
+    this.started = true;
     this.refs.skillOverlay.classList.add('hidden');
+    this.refs.modeSelect.classList.add('hidden');
     this.updateSkillBar();
+
+    this.gameMode = mode;
+    this.objective = mode === 'challenge' && objectiveId ? startObjective(objectiveId, this.lastTime) : null;
+    if (this.objective?.id === 'preset-blocks') applyPresetBlocks(this.board);
+    this.updateObjectiveHUD();
+
     this.queue = Array.from({ length: QUEUE_LOOKAHEAD }, () => randomPiece());
     this.spawn();
     this.drawHold();
@@ -397,5 +442,51 @@ export class Game {
     this.refs.overlay.classList.add('hidden');
     cancelAnimationFrame(this.animId);
     this.animId = requestAnimationFrame(this.loop);
+  }
+
+  private updateObjectiveHUD(): void {
+    if (!this.objective) {
+      this.refs.objectiveSection.classList.add('hidden');
+      return;
+    }
+    this.refs.objectiveSection.classList.remove('hidden');
+    const labels: Record<ObjectiveId, string> = {
+      sprint: 'SPRINT 40L',
+      survival: 'SUPERVIVENCIA',
+      'preset-blocks': 'BLOQUES FIJOS',
+    };
+    this.refs.objectiveLabelEl.textContent = labels[this.objective.id];
+    if (this.objective.id === 'sprint') {
+      const remaining = Math.max(0, 120 - Math.floor(this.objective.elapsedMs / 1000));
+      this.refs.objectiveValueEl.textContent = `${this.lines}/40 · ${remaining}s`;
+    } else if (this.objective.id === 'survival') {
+      this.refs.objectiveValueEl.textContent = `${Math.floor(this.objective.elapsedMs / 1000)}s`;
+    } else {
+      this.refs.objectiveValueEl.textContent = '—';
+    }
+  }
+
+  private endChallenge(): void {
+    if (!this.objective) return;
+    this.gameOver = true;
+    cancelAnimationFrame(this.animId);
+    this.refs.overlayTitle.textContent = this.objective.status === 'won' ? '¡OBJETIVO CUMPLIDO!' : 'DESAFÍO FALLIDO';
+    this.refs.overlayScore.textContent = `Puntuación: ${this.score.toLocaleString()}`;
+    this.refs.overlay.classList.remove('hidden');
+  }
+
+  /** Restart button: endless mode restarts endless, challenge mode returns to mode-select. */
+  restart(): void {
+    if (this.gameMode === 'challenge') {
+      this.started = false;
+      this.gameMode = 'endless';
+      this.objective = null;
+      cancelAnimationFrame(this.animId);
+      this.refs.overlay.classList.add('hidden');
+      this.refs.objectiveSection.classList.add('hidden');
+      this.refs.modeSelect.classList.remove('hidden');
+    } else {
+      this.init('endless');
+    }
   }
 }

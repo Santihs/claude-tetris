@@ -32,17 +32,17 @@ Implementación del clásico **Tetris** en TypeScript, usando HTML5 Canvas y CSS
 
 ## Qué hace el proyecto
 
-Es una versión jugable del Tetris clásico con todas las mecánicas que esperarías:
+Es una versión jugable del Tetris clásico, con todas las mecánicas base y varias capas encima:
 
-- Tablero de **10 × 20** celdas.
-- Las **7 piezas estándar** (I, O, T, S, Z, J, L) con colores diferenciados.
-- **Rotación** con _wall kicks_ básicos (pequeños desplazamientos para que la pieza pueda rotar pegada a la pared).
-- **Soft drop** (bajada acelerada) y **hard drop** (caída instantánea).
-- **Pieza fantasma** (_ghost piece_): muestra dónde aterrizará la pieza actual.
-- **Vista previa** de la siguiente pieza.
-- **Sistema de puntuación** clásico de Tetris (100 / 300 / 500 / 800 multiplicado por nivel).
+- Tablero de **10 × 20** celdas, las **7 piezas estándar** (I, O, T, S, Z, J, L), rotación con _wall kicks_, soft/hard drop, pieza fantasma, pausa y reinicio.
+- **Hold**: reserva la pieza actual (`C` / `Shift`), una vez por turno.
+- **Piezas especiales**: pentominós (`+`, `U`, `Y`) que aparecen ocasionalmente, una pieza `1×1` de recompensa tras un Tetris, y una pieza hueca `3×3` como reto periódico.
+- **Power-ups**: cada 5 líneas aparece una pieza especial (bomba, rayo, congelar, gravedad, tinte) con un efecto distinto al colocarla.
+- **Combos y bonificaciones**: rachas de líneas consecutivas, T-spin, back-to-back Tetris y Perfect Clear, con aviso visual en pantalla.
+- **Barra de habilidad**: se carga al limpiar líneas; al llenarse (`V`) da a elegir entre ver las próximas 5 piezas, cambiar la pieza actual, ralentizar la caída, deshacer la última jugada, o un hold gratis.
+- **Modo Desafío**: sprint de 40 líneas contrarreloj, supervivencia con basura que sube cada 10s, y una partida con bloques fijos pre-colocados — seleccionable desde la pantalla inicial.
+- **Sistema de puntuación** clásico de Tetris (100 / 300 / 500 / 800 multiplicado por nivel) más las bonificaciones de combo/T-spin/B2B/perfect clear.
 - **Niveles** que aumentan cada 10 líneas y aceleran la caída.
-- **Pausa** y **Game Over** con opción de reinicio.
 
 ---
 
@@ -75,13 +75,16 @@ pnpm typecheck    # solo chequeo de tipos, sin build
 
 ## Controles
 
-| Tecla     | Acción                            |
-| --------- | --------------------------------- |
-| `←` / `→` | Mover la pieza horizontalmente    |
-| `↑` o `X` | Rotar la pieza en sentido horario |
-| `↓`       | Soft drop (bajar más rápido)      |
-| `Espacio` | Hard drop (caída instantánea)     |
-| `P`       | Pausar / reanudar                 |
+| Tecla         | Acción                              |
+| ------------- | ------------------------------------ |
+| `←` / `→`     | Mover la pieza horizontalmente       |
+| `↑` o `X`     | Rotar la pieza en sentido horario    |
+| `↓`           | Soft drop (bajar más rápido)         |
+| `Espacio`     | Hard drop (caída instantánea)        |
+| `C` / `Shift` | Hold (reservar pieza actual)         |
+| `V`           | Abrir menú de habilidad (si está lista) |
+| `1`–`5`       | Elegir habilidad (menú de habilidad) |
+| `P`           | Pausar / reanudar                    |
 
 ---
 
@@ -106,17 +109,21 @@ La lógica está separada por responsabilidad en módulos pequeños:
 
 | Módulo | Responsabilidad |
 | --- | --- |
-| `constants.ts` | `COLS`/`ROWS`/`BLOCK`, paleta `COLORS`, formas `PIECES`, `LINE_SCORES` |
-| `types.ts` | Tipos compartidos (`Board`, `Piece`, `Shape`, `GameState`) |
-| `board.ts` | `createBoard`, `collide`, `merge`, `clearLines` — lógica pura, testeada con Vitest |
-| `pieces.ts` | `randomPiece`, `rotateCW`, `tryRotate` (wall kicks) |
-| `scoring.ts` | Puntuación de hard/soft drop |
-| `render.ts` | Dibujado en canvas: tablero, grid, pieza, ghost, preview |
+| `constants.ts` | Dimensiones, paleta `COLORS`, formas `PIECES`, tablas de puntuación y todas las constantes de balance (intervalos de power-up, duración de freeze/slow-time, etc.) |
+| `types.ts` | Tipos compartidos (`Board`, `Piece`, `Shape`, `PowerUpKind`) |
+| `board.ts` | `createBoard`, `collide`, `merge`, `clearLines` (incluye `isPerfectClear`) — lógica pura, testeada con Vitest |
+| `pieces.ts` | `randomPiece`, `rotateCW`, `tryRotate` (wall kicks + detección de T-spin), `selectNextPieceType` (prioridad de spawn especial) |
+| `scoring.ts` | Puntuación de drop, combo, T-spin, back-to-back y perfect clear |
+| `hold.ts` | Lógica de reservar/intercambiar pieza |
+| `powerups.ts` | Efectos de las piezas power-up (bomba, rayo, congelar, gravedad, tinte) |
+| `skills.ts` | Dispatcher de la barra de habilidad (`applySkill`) |
+| `challenge.ts` | Objetivos del modo desafío: sprint, supervivencia (basura), bloques fijos |
+| `render.ts` | Dibujado en canvas: tablero, grid, pieza, ghost, preview, tira de cola |
 | `hud.ts` | Actualiza `SCORE`/`LINES`/`LEVEL` en el DOM |
 | `theme.ts` | Tema claro/oscuro persistido en `localStorage` |
 | `input.ts` | Bindings de teclado |
-| `loop.ts` | Clase `Game`: orquesta estado, `requestAnimationFrame`, spawn/lock/game-over |
-| `main.ts` | Punto de entrada: DOM refs, wiring, `init()` |
+| `loop.ts` | Clase `Game`: orquesta todo el estado, `requestAnimationFrame`, spawn/lock/game-over/desafíos |
+| `main.ts` | Punto de entrada: DOM refs, wiring, selección de modo |
 
 Detalles de la lógica (sin cambios respecto a la versión original):
 
@@ -174,11 +181,15 @@ Cuando una pieza recién generada ya colisiona al aparecer (`spawn`), se dispara
 ├── tsconfig.json      # Configuración de TypeScript
 ├── vite.config.ts     # Configuración de Vite + Vitest
 └── src/
-    ├── main.ts        # Punto de entrada
+    ├── main.ts        # Punto de entrada, selección de modo
     ├── loop.ts        # Clase Game: orquestación del juego
     ├── board.ts       # Lógica de tablero (+ board.test.ts)
-    ├── pieces.ts      # Piezas y rotación (+ pieces.test.ts)
-    ├── scoring.ts     # Puntuación (+ scoring.test.ts)
+    ├── pieces.ts      # Piezas, rotación, T-spin (+ pieces.test.ts)
+    ├── scoring.ts     # Puntuación y bonificaciones (+ scoring.test.ts)
+    ├── hold.ts        # Hold/bucket (+ hold.test.ts)
+    ├── powerups.ts    # Efectos de power-ups (+ powerups.test.ts)
+    ├── skills.ts      # Barra de habilidad (+ skills.test.ts)
+    ├── challenge.ts   # Modo desafío (+ challenge.test.ts)
     ├── render.ts      # Dibujado en canvas
     ├── hud.ts         # Marcadores DOM
     ├── theme.ts       # Tema claro/oscuro

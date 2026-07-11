@@ -6,6 +6,7 @@ import type { Game } from './loop';
 
 export function bindInput(game: Game): void {
   document.addEventListener('keydown', e => {
+    if (!game.started) return;
     if (game.skillMenuOpen) {
       const skillId = SKILL_BY_DIGIT[e.code];
       if (skillId) applySkill(game, skillId);
