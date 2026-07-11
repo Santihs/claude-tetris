@@ -10,6 +10,9 @@ export interface GameRefs extends HudRefs {
   ctx: CanvasRenderingContext2D;
   nextCanvas: HTMLCanvasElement;
   nextCtx: CanvasRenderingContext2D;
+  holdCanvas: HTMLCanvasElement;
+  holdCtx: CanvasRenderingContext2D;
+  holdSection: HTMLElement;
   overlay: HTMLElement;
   overlayTitle: HTMLElement;
   overlayScore: HTMLElement;
@@ -19,6 +22,8 @@ export class Game {
   board!: Board;
   current!: Piece;
   next!: Piece;
+  hold: Piece | null = null;
+  holdUsedThisTurn = false;
   score = 0;
   lines = 0;
   level = 1;
@@ -35,6 +40,8 @@ export class Game {
   spawn(): void {
     this.current = this.next;
     this.next = randomPiece();
+    this.holdUsedThisTurn = false;
+    this.updateHoldPanel();
     if (collide(this.board, this.current.shape, this.current.x, this.current.y)) {
       this.endGame();
     }
@@ -43,6 +50,16 @@ export class Game {
 
   drawNext(): void {
     drawPiecePreview(this.refs.nextCtx, this.refs.nextCanvas, this.next.shape);
+  }
+
+  drawHold(): void {
+    if (this.hold) drawPiecePreview(this.refs.holdCtx, this.refs.holdCanvas, this.hold.shape);
+    else this.refs.holdCtx.clearRect(0, 0, this.refs.holdCanvas.width, this.refs.holdCanvas.height);
+    this.updateHoldPanel();
+  }
+
+  private updateHoldPanel(): void {
+    this.refs.holdSection.classList.toggle('hold-locked', this.holdUsedThisTurn);
   }
 
   lockPiece(): void {
@@ -136,8 +153,11 @@ export class Game {
     this.dropInterval = 1000;
     this.dropAccum = 0;
     this.lastTime = performance.now();
+    this.hold = null;
+    this.holdUsedThisTurn = false;
     this.next = randomPiece();
     this.spawn();
+    this.drawHold();
     this.updateHUD();
     this.refs.overlay.classList.add('hidden');
     cancelAnimationFrame(this.animId);

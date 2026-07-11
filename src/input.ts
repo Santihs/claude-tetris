@@ -1,5 +1,6 @@
 import { collide } from './board';
 import { tryRotate } from './pieces';
+import { holdPiece } from './hold';
 import type { Game } from './loop';
 
 export function bindInput(game: Game): void {
@@ -23,6 +24,11 @@ export function bindInput(game: Game): void {
       case 'Space':
         e.preventDefault();
         game.hardDrop();
+        break;
+      case 'KeyC':
+      case 'ShiftLeft':
+      case 'ShiftRight':
+        holdPiece(game);
         break;
     }
     game.updateHUD();

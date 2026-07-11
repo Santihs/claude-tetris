@@ -7,6 +7,9 @@ const canvas = document.getElementById('board') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d')!;
 const nextCanvas = document.getElementById('next-canvas') as HTMLCanvasElement;
 const nextCtx = nextCanvas.getContext('2d')!;
+const holdCanvas = document.getElementById('hold-canvas') as HTMLCanvasElement;
+const holdCtx = holdCanvas.getContext('2d')!;
+const holdSection = document.getElementById('hold-section')!;
 const scoreEl = document.getElementById('score')!;
 const linesEl = document.getElementById('lines')!;
 const levelEl = document.getElementById('level')!;
@@ -19,6 +22,7 @@ const themeIcon = document.getElementById('theme-icon')!;
 
 const refs: GameRefs = {
   canvas, ctx, nextCanvas, nextCtx,
+  holdCanvas, holdCtx, holdSection,
   scoreEl, linesEl, levelEl,
   overlay, overlayTitle, overlayScore,
 };

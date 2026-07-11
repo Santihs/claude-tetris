@@ -2,10 +2,19 @@ import { COLS, PIECES } from './constants';
 import { collide } from './board';
 import type { Board, Piece, Shape } from './types';
 
+export function centeredX(shape: Shape): number {
+  return Math.floor(COLS / 2) - Math.floor(shape[0].length / 2);
+}
+
 export function randomPiece(): Piece {
   const type = Math.floor(Math.random() * 7) + 1;
   const shape = (PIECES[type] as Shape).map(row => [...row]);
-  return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
+  return { type, shape, x: centeredX(shape), y: 0 };
+}
+
+export function spawnOrientation(type: number): Piece {
+  const shape = (PIECES[type] as Shape).map(row => [...row]);
+  return { type, shape, x: centeredX(shape), y: 0 };
 }
 
 export function rotateCW(shape: Shape): Shape {
