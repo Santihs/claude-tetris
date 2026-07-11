@@ -1,4 +1,4 @@
-import type { Shape } from './types';
+import type { PowerUpKind, Shape } from './types';
 
 export const COLS = 10;
 export const ROWS = 20;
@@ -18,6 +18,11 @@ export const COLORS: (string | null)[] = [
   '#9575cd', // 10 Y pentomino - deep purple
   '#ffffff', // 11 1x1 reward piece - white
   '#78909c', // 12 hollow 3x3 challenge piece - blue-grey
+  '#ff5252', // 13 power-up: bomb - red
+  '#fff176', // 14 power-up: lightning - bright yellow
+  '#80deea', // 15 power-up: freeze - icy cyan
+  '#a1887f', // 16 power-up: gravity - brown
+  '#ce93d8', // 17 power-up: dye - orchid
 ];
 
 export const PIECES: (Shape | null)[] = [
@@ -34,6 +39,11 @@ export const PIECES: (Shape | null)[] = [
   [[0,10],[10,10],[0,10],[0,10]],             // 10 Y pentomino
   [[11]],                                     // 11 1x1 reward piece
   [[12,12,12],[12,0,12],[12,12,12]],          // 12 hollow 3x3 challenge piece
+  [[13,13],[13,13]],                          // 13 power-up: bomb
+  [[14,14],[14,14]],                          // 14 power-up: lightning
+  [[15,15],[15,15]],                          // 15 power-up: freeze
+  [[16,16],[16,16]],                          // 16 power-up: gravity
+  [[17,17],[17,17]],                          // 17 power-up: dye
 ];
 
 export const LINE_SCORES = [0, 100, 300, 500, 800];
@@ -44,3 +54,21 @@ export const REWARD_PIECE_TYPE = 11;
 export const CHALLENGE_PIECE_TYPE = 12;
 export const CHALLENGE_PIECE_INTERVAL = 15;
 export const PENTOMINO_ROLL_CHANCE = 0.15;
+
+export const POWER_UP_TYPE_BY_KIND: Record<PowerUpKind, number> = {
+  bomb: 13,
+  lightning: 14,
+  freeze: 15,
+  gravity: 16,
+  dye: 17,
+};
+export const POWER_UP_KIND_BY_TYPE: Record<number, PowerUpKind> = {
+  13: 'bomb',
+  14: 'lightning',
+  15: 'freeze',
+  16: 'gravity',
+  17: 'dye',
+};
+export const POWER_UP_TYPES = Object.values(POWER_UP_TYPE_BY_KIND);
+export const POWER_UP_LINE_INTERVAL = 5;
+export const FREEZE_DURATION_MS = 5000;

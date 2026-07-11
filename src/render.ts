@@ -66,6 +66,17 @@ export function draw(
   for (let r = 0; r < current.shape.length; r++)
     for (let c = 0; c < current.shape[r].length; c++)
       drawBlock(ctx, current.x + c, current.y + r, current.shape[r][c], BLOCK);
+
+  if (current.powerUpKind) drawPowerUpOutline(ctx, current);
+}
+
+function drawPowerUpOutline(ctx: CanvasRenderingContext2D, current: Piece): void {
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 2;
+  for (let r = 0; r < current.shape.length; r++)
+    for (let c = 0; c < current.shape[r].length; c++)
+      if (current.shape[r][c])
+        ctx.strokeRect((current.x + c) * BLOCK + 2, (current.y + r) * BLOCK + 2, BLOCK - 4, BLOCK - 4);
 }
 
 export function drawPiecePreview(

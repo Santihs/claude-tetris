@@ -2,11 +2,14 @@ export type Shape = number[][];
 
 export type Board = number[][];
 
+export type PowerUpKind = 'bomb' | 'lightning' | 'freeze' | 'gravity' | 'dye';
+
 export interface Piece {
   type: number;
   shape: Shape;
   x: number;
   y: number;
+  powerUpKind?: PowerUpKind;
 }
 
 export interface GameState {

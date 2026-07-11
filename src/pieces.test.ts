@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { rotateCW, tryRotate, randomPiece, selectNextPieceType } from './pieces';
 import { createBoard, collide } from './board';
-import { STANDARD_TYPES, PENTOMINO_TYPES, REWARD_PIECE_TYPE, CHALLENGE_PIECE_TYPE, CHALLENGE_PIECE_INTERVAL } from './constants';
+import { STANDARD_TYPES, PENTOMINO_TYPES, REWARD_PIECE_TYPE, CHALLENGE_PIECE_TYPE, CHALLENGE_PIECE_INTERVAL, POWER_UP_TYPES } from './constants';
 import type { Piece } from './types';
 
 describe('rotateCW', () => {
@@ -50,7 +50,7 @@ describe('tryRotate', () => {
 
   it('never collides on spawn for every piece type, standard and special', () => {
     const board = createBoard();
-    for (const type of [...STANDARD_TYPES, ...PENTOMINO_TYPES, REWARD_PIECE_TYPE, CHALLENGE_PIECE_TYPE]) {
+    for (const type of [...STANDARD_TYPES, ...PENTOMINO_TYPES, REWARD_PIECE_TYPE, CHALLENGE_PIECE_TYPE, ...POWER_UP_TYPES]) {
       const piece = randomPiece(type);
       expect(collide(board, piece.shape, piece.x, piece.y)).toBe(false);
     }
@@ -58,25 +58,37 @@ describe('tryRotate', () => {
 });
 
 describe('selectNextPieceType', () => {
-  it('prioritizes the Tetris-reward piece over anything else', () => {
-    const result = selectNextPieceType(true, 0);
+  it('prioritizes the Tetris-reward piece over anything else, including a ready power-up', () => {
+    const result = selectNextPieceType(true, 0, true);
     expect(result.type).toBe(REWARD_PIECE_TYPE);
     expect(result.pendingRewardPiece).toBe(false);
+    expect(result.powerUpConsumed).toBe(false);
+  });
+
+  it('spawns a power-up piece when ready and no reward is pending', () => {
+    const result = selectNextPieceType(false, 0, true);
+    expect(POWER_UP_TYPES).toContain(result.type);
+    expect(result.powerUpConsumed).toBe(true);
   });
 
   it('spawns the challenge piece every CHALLENGE_PIECE_INTERVAL pieces', () => {
-    const result = selectNextPieceType(false, CHALLENGE_PIECE_INTERVAL - 1);
+    const result = selectNextPieceType(false, CHALLENGE_PIECE_INTERVAL - 1, false);
     expect(result.type).toBe(CHALLENGE_PIECE_TYPE);
     expect(result.pieceSpawnCount).toBe(CHALLENGE_PIECE_INTERVAL);
   });
 
   it('otherwise rolls a standard or pentomino type', () => {
-    const result = selectNextPieceType(false, 1);
+    const result = selectNextPieceType(false, 1, false);
     expect([...STANDARD_TYPES, ...PENTOMINO_TYPES]).toContain(result.type);
   });
 
   it('never rolls both reward and challenge on the same call', () => {
-    const result = selectNextPieceType(true, CHALLENGE_PIECE_INTERVAL - 1);
+    const result = selectNextPieceType(true, CHALLENGE_PIECE_INTERVAL - 1, false);
     expect(result.type).toBe(REWARD_PIECE_TYPE);
+  });
+
+  it('never rolls both power-up and challenge on the same call', () => {
+    const result = selectNextPieceType(false, CHALLENGE_PIECE_INTERVAL - 1, true);
+    expect(POWER_UP_TYPES).toContain(result.type);
   });
 });

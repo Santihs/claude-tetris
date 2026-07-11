@@ -1,8 +1,10 @@
 import { collide, createBoard, merge, clearLines } from './board';
 import { randomPiece, selectNextPieceType } from './pieces';
+import { applyPowerUpEffect } from './powerups';
 import { draw, drawPiecePreview, ghostY } from './render';
 import { updateHUD, type HudRefs } from './hud';
 import { hardDropPoints, SOFT_DROP_POINTS } from './scoring';
+import { POWER_UP_LINE_INTERVAL } from './constants';
 import type { Board, Piece } from './types';
 
 export interface GameRefs extends HudRefs {
@@ -13,6 +15,7 @@ export interface GameRefs extends HudRefs {
   holdCanvas: HTMLCanvasElement;
   holdCtx: CanvasRenderingContext2D;
   holdSection: HTMLElement;
+  powerUpProgressEl: HTMLElement;
   overlay: HTMLElement;
   overlayTitle: HTMLElement;
   overlayScore: HTMLElement;
@@ -26,6 +29,9 @@ export class Game {
   holdUsedThisTurn = false;
   pendingRewardPiece = false;
   pieceSpawnCount = 0;
+  linesUntilPowerUp = POWER_UP_LINE_INTERVAL;
+  powerUpReady = false;
+  freezeUntil: number | null = null;
   score = 0;
   lines = 0;
   level = 1;
@@ -41,16 +47,27 @@ export class Game {
 
   spawn(): void {
     this.current = this.next;
-    const selection = selectNextPieceType(this.pendingRewardPiece, this.pieceSpawnCount);
+    const selection = selectNextPieceType(this.pendingRewardPiece, this.pieceSpawnCount, this.powerUpReady);
     this.pendingRewardPiece = selection.pendingRewardPiece;
     this.pieceSpawnCount = selection.pieceSpawnCount;
+    if (selection.powerUpConsumed) {
+      this.powerUpReady = false;
+      this.linesUntilPowerUp = POWER_UP_LINE_INTERVAL;
+    }
     this.next = randomPiece(selection.type);
     this.holdUsedThisTurn = false;
     this.updateHoldPanel();
+    this.updatePowerUpProgress();
     if (collide(this.board, this.current.shape, this.current.x, this.current.y)) {
       this.endGame();
     }
     this.drawNext();
+  }
+
+  private updatePowerUpProgress(): void {
+    this.refs.powerUpProgressEl.textContent = this.powerUpReady
+      ? '¡Listo!'
+      : String(this.linesUntilPowerUp);
   }
 
   drawNext(): void {
@@ -69,6 +86,10 @@ export class Game {
 
   lockPiece(): void {
     merge(this.board, this.current.shape, this.current.x, this.current.y);
+    if (this.current.powerUpKind) {
+      const effect = applyPowerUpEffect(this.board, this.current.powerUpKind, this.current.x, this.current.y, performance.now());
+      if (effect.freezeUntil) this.freezeUntil = effect.freezeUntil;
+    }
     const result = clearLines(this.board, this.lines, this.level);
     if (result.cleared) {
       this.lines = result.linesAfter;
@@ -77,6 +98,8 @@ export class Game {
       this.dropInterval = result.dropIntervalAfter;
       this.updateHUD();
       if (result.cleared === 4) this.pendingRewardPiece = true;
+      this.linesUntilPowerUp = Math.max(0, this.linesUntilPowerUp - result.cleared);
+      if (this.linesUntilPowerUp === 0) this.powerUpReady = true;
     }
     this.spawn();
   }
@@ -135,13 +158,22 @@ export class Game {
   loop = (ts: number): void => {
     const dt = ts - this.lastTime;
     this.lastTime = ts;
-    this.dropAccum += dt;
-    if (this.dropAccum >= this.dropInterval) {
-      this.dropAccum = 0;
-      if (!collide(this.board, this.current.shape, this.current.x, this.current.y + 1)) {
-        this.current.y++;
-      } else {
-        this.lockPiece();
+    const frozen = this.freezeUntil !== null && ts < this.freezeUntil;
+    if (frozen) {
+      // Freeze suspends gravity only - movement/rotation/hard-drop still work via input.ts.
+    } else {
+      if (this.freezeUntil !== null) {
+        this.freezeUntil = null;
+        this.dropAccum = 0; // avoid an instant drop the moment freeze ends
+      }
+      this.dropAccum += dt;
+      if (this.dropAccum >= this.dropInterval) {
+        this.dropAccum = 0;
+        if (!collide(this.board, this.current.shape, this.current.x, this.current.y + 1)) {
+          this.current.y++;
+        } else {
+          this.lockPiece();
+        }
       }
     }
     if (this.gameOver) return;
@@ -163,6 +195,9 @@ export class Game {
     this.holdUsedThisTurn = false;
     this.pendingRewardPiece = false;
     this.pieceSpawnCount = 0;
+    this.linesUntilPowerUp = POWER_UP_LINE_INTERVAL;
+    this.powerUpReady = false;
+    this.freezeUntil = null;
     this.next = randomPiece();
     this.spawn();
     this.drawHold();

@@ -1,8 +1,10 @@
 import {
   COLS, PIECES, STANDARD_TYPES, PENTOMINO_TYPES,
   REWARD_PIECE_TYPE, CHALLENGE_PIECE_TYPE, CHALLENGE_PIECE_INTERVAL, PENTOMINO_ROLL_CHANCE,
+  POWER_UP_TYPE_BY_KIND,
 } from './constants';
 import { collide } from './board';
+import { powerUpKindForType, randomPowerUpKind } from './powerups';
 import type { Board, Piece, Shape } from './types';
 
 export function centeredX(shape: Shape): number {
@@ -18,7 +20,8 @@ function pickWeightedType(): number {
 
 export function spawnOrientation(type: number): Piece {
   const shape = (PIECES[type] as Shape).map(row => [...row]);
-  return { type, shape, x: centeredX(shape), y: 0 };
+  const powerUpKind = powerUpKindForType(type);
+  return { type, shape, x: centeredX(shape), y: 0, ...(powerUpKind ? { powerUpKind } : {}) };
 }
 
 export function randomPiece(forcedType?: number): Piece {
@@ -29,21 +32,26 @@ export interface NextPieceSelection {
   type: number;
   pendingRewardPiece: boolean;
   pieceSpawnCount: number;
+  powerUpConsumed: boolean;
 }
 
 /**
- * Priority order for the piece that will become `next`: Tetris-reward > challenge-interval > standard/pentomino roll.
+ * Priority order for the piece that will become `next`: Tetris-reward > power-up > challenge-interval > standard/pentomino roll.
  * Pure function so the spawn-selection priority is unit-testable without the DOM/canvas-bound Game class.
  */
-export function selectNextPieceType(pendingRewardPiece: boolean, pieceSpawnCount: number): NextPieceSelection {
+export function selectNextPieceType(pendingRewardPiece: boolean, pieceSpawnCount: number, powerUpReady: boolean): NextPieceSelection {
   if (pendingRewardPiece) {
-    return { type: REWARD_PIECE_TYPE, pendingRewardPiece: false, pieceSpawnCount };
+    return { type: REWARD_PIECE_TYPE, pendingRewardPiece: false, pieceSpawnCount, powerUpConsumed: false };
+  }
+  if (powerUpReady) {
+    const type = POWER_UP_TYPE_BY_KIND[randomPowerUpKind()];
+    return { type, pendingRewardPiece: false, pieceSpawnCount, powerUpConsumed: true };
   }
   const nextCount = pieceSpawnCount + 1;
   if (nextCount % CHALLENGE_PIECE_INTERVAL === 0) {
-    return { type: CHALLENGE_PIECE_TYPE, pendingRewardPiece: false, pieceSpawnCount: nextCount };
+    return { type: CHALLENGE_PIECE_TYPE, pendingRewardPiece: false, pieceSpawnCount: nextCount, powerUpConsumed: false };
   }
-  return { type: pickWeightedType(), pendingRewardPiece: false, pieceSpawnCount: nextCount };
+  return { type: pickWeightedType(), pendingRewardPiece: false, pieceSpawnCount: nextCount, powerUpConsumed: false };
 }
 
 export function rotateCW(shape: Shape): Shape {
