@@ -1,10 +1,12 @@
 # Claude Tetris
 
-Implementación del clásico **Tetris** en JavaScript vanilla, usando HTML5 Canvas y CSS. Sin dependencias externas, sin frameworks, sin proceso de build: solo abrir y jugar.
+Implementación del clásico **Tetris** en TypeScript, usando HTML5 Canvas y CSS, empaquetado con Vite y gestionado con pnpm.
 
 ![Tech](https://img.shields.io/badge/HTML5-Canvas-orange)
 ![Tech](https://img.shields.io/badge/CSS3-blueviolet)
-![Tech](https://img.shields.io/badge/JavaScript-Vanilla-yellow)
+![Tech](https://img.shields.io/badge/TypeScript-blue)
+![Tech](https://img.shields.io/badge/Vite-purple)
+![Tech](https://img.shields.io/badge/pnpm-orange)
 
 ---
 
@@ -14,13 +16,12 @@ Implementación del clásico **Tetris** en JavaScript vanilla, usando HTML5 Canv
   - [Tabla de contenidos](#tabla-de-contenidos)
   - [Qué hace el proyecto](#qué-hace-el-proyecto)
   - [Cómo ejecutar el juego](#cómo-ejecutar-el-juego)
-    - [Opción 1: abrir el archivo directamente](#opción-1-abrir-el-archivo-directamente)
-    - [Opción 2: servidor local (recomendado)](#opción-2-servidor-local-recomendado)
+  - [Tests](#tests)
   - [Controles](#controles)
   - [Cómo funciona](#cómo-funciona)
     - [1. `index.html`](#1-indexhtml)
-    - [2. `style.css`](#2-stylecss)
-    - [3. `game.js`](#3-gamejs)
+    - [2. `src/style.css`](#2-srcstylecss)
+    - [3. `src/*.ts`](#3-srcts)
     - [Flujo del juego](#flujo-del-juego)
   - [Tecnologías](#tecnologías)
   - [Estructura del proyecto](#estructura-del-proyecto)
@@ -47,32 +48,28 @@ Es una versión jugable del Tetris clásico con todas las mecánicas que esperar
 
 ## Cómo ejecutar el juego
 
-No hay nada que instalar ni compilar. Tienes dos opciones:
-
-### Opción 1: abrir el archivo directamente
+Requiere [pnpm](https://pnpm.io/).
 
 ```bash
-open index.html        # macOS
-xdg-open index.html    # Linux
-start index.html       # Windows
+pnpm install      # instala dependencias
+pnpm dev          # servidor de desarrollo con hot-reload (Vite)
+pnpm build        # typecheck + build de producción en dist/
+pnpm preview      # sirve el build de producción localmente
 ```
 
-### Opción 2: servidor local (recomendado)
+Abre la URL que imprime `pnpm dev` (por defecto `http://localhost:5173`).
 
-Cualquier servidor estático funciona. Algunos ejemplos:
+---
+
+## Tests
+
+Lógica pura (colisiones, rotación, limpieza de líneas, puntuación) cubierta con [Vitest](https://vitest.dev/):
 
 ```bash
-# Con Python 3
-python3 -m http.server 8000
-
-# Con Node.js (npx)
-npx serve .
-
-# Con PHP
-php -S localhost:8000
+pnpm test         # corre la suite una vez
+pnpm test:watch   # modo watch
+pnpm typecheck    # solo chequeo de tipos, sin build
 ```
-
-Después abre `http://localhost:8000` en el navegador.
 
 ---
 
@@ -90,8 +87,6 @@ Después abre `http://localhost:8000` en el navegador.
 
 ## Cómo funciona
 
-El juego se compone de tres archivos que cooperan:
-
 ### 1. `index.html`
 
 Define la estructura visual:
@@ -99,20 +94,37 @@ Define la estructura visual:
 - Un `<canvas id="board">` de **300 × 600** píxeles donde se renderiza el tablero.
 - Un panel lateral con `SCORE`, `LINES`, `LEVEL`, vista de la siguiente pieza y la lista de controles.
 - Un overlay para los estados **PAUSA** y **GAME OVER**.
+- Carga `src/main.ts` como módulo ES nativo (`<script type="module">`).
 
-### 2. `style.css`
+### 2. `src/style.css`
 
-Aporta el aspecto visual con estética _dark / retro arcade_: fondo oscuro, tipografía monoespaciada para los marcadores y _backdrop blur_ en los overlays.
+Aporta el aspecto visual con estética _dark / retro arcade_: fondo oscuro, tipografía monoespaciada para los marcadores y _backdrop blur_ en los overlays. Se importa desde `src/main.ts`.
 
-### 3. `game.js`
+### 3. `src/*.ts`
 
-Contiene toda la lógica del juego. A grandes rasgos:
+La lógica está separada por responsabilidad en módulos pequeños:
+
+| Módulo | Responsabilidad |
+| --- | --- |
+| `constants.ts` | `COLS`/`ROWS`/`BLOCK`, paleta `COLORS`, formas `PIECES`, `LINE_SCORES` |
+| `types.ts` | Tipos compartidos (`Board`, `Piece`, `Shape`, `GameState`) |
+| `board.ts` | `createBoard`, `collide`, `merge`, `clearLines` — lógica pura, testeada con Vitest |
+| `pieces.ts` | `randomPiece`, `rotateCW`, `tryRotate` (wall kicks) |
+| `scoring.ts` | Puntuación de hard/soft drop |
+| `render.ts` | Dibujado en canvas: tablero, grid, pieza, ghost, preview |
+| `hud.ts` | Actualiza `SCORE`/`LINES`/`LEVEL` en el DOM |
+| `theme.ts` | Tema claro/oscuro persistido en `localStorage` |
+| `input.ts` | Bindings de teclado |
+| `loop.ts` | Clase `Game`: orquesta estado, `requestAnimationFrame`, spawn/lock/game-over |
+| `main.ts` | Punto de entrada: DOM refs, wiring, `init()` |
+
+Detalles de la lógica (sin cambios respecto a la versión original):
 
 - **Modelo del tablero**: una matriz `ROWS × COLS` donde cada celda guarda `0` (vacía) o un índice de color (1–7) que identifica la pieza.
 - **Piezas**: definidas como matrices cuadradas. Para rotar se calcula la transposición + reverso de filas (`rotateCW`).
 - **Detección de colisiones** (`collide`): comprueba que ninguna celda de la pieza salga del tablero ni se solape con bloques ya fijados.
 - **Wall kicks** (`tryRotate`): si la rotación choca, intenta desplazar la pieza ±1 y ±2 columnas antes de descartar el giro.
-- **Game loop** (`loop`): basado en `requestAnimationFrame`, acumula el tiempo transcurrido y baja la pieza una fila cuando se supera `dropInterval`.
+- **Game loop** (`Game.loop`): basado en `requestAnimationFrame`, acumula el tiempo transcurrido y baja la pieza una fila cuando se supera `dropInterval`. Si el juego termina a mitad de un tick, corta antes de reprogramar el siguiente frame.
 - **Limpieza de líneas** (`clearLines`): recorre el tablero de abajo hacia arriba; cada fila completa se elimina y se inserta una vacía en la cima.
 - **Puntuación**: usa la tabla clásica `[0, 100, 300, 500, 800]` multiplicada por el nivel actual; el hard drop suma 2 puntos por celda recorrida y el soft drop 1 punto por fila.
 - **Nivel y velocidad**: el nivel sube cada 10 líneas; la velocidad de caída se calcula como `max(100, 1000 − (level − 1) × 90)` milisegundos.
@@ -144,11 +156,12 @@ Cuando una pieza recién generada ya colisiona al aparecer (`spawn`), se dispara
 
 - **HTML5** — marcado y dos elementos `<canvas>` (tablero y vista previa).
 - **CSS3** — _flexbox_, variables de color, `backdrop-filter` y `box-shadow`.
-- **JavaScript (ES6+) vanilla** — `const`/`let`, _arrow functions_, _spread operator_, `Array.from`, _template literals_…
+- **TypeScript** — tipado estricto (`strict: true`), módulos ES nativos.
+- **Vite** — servidor de desarrollo con HMR y build de producción.
+- **Vitest** — tests unitarios para la lógica de tablero, piezas y puntuación.
+- **pnpm** — gestor de paquetes.
 - **Canvas 2D API** — para todo el renderizado del juego.
 - **`requestAnimationFrame`** — para el bucle de juego sincronizado con el navegador.
-
-**Sin dependencias.** No hay `package.json`, ni bundler, ni transpilador.
 
 ---
 
@@ -156,17 +169,30 @@ Cuando una pieza recién generada ya colisiona al aparecer (`spawn`), se dispara
 
 ```
 03-tetris/
-├── index.html      # Estructura del DOM y canvas
-├── style.css       # Estilos del juego (dark theme)
-├── game.js         # Toda la lógica del Tetris (~300 líneas)
-└── README.md
+├── index.html        # Estructura del DOM y canvas
+├── package.json      # Scripts (dev/build/test/typecheck) y dependencias
+├── tsconfig.json      # Configuración de TypeScript
+├── vite.config.ts     # Configuración de Vite + Vitest
+└── src/
+    ├── main.ts        # Punto de entrada
+    ├── loop.ts        # Clase Game: orquestación del juego
+    ├── board.ts       # Lógica de tablero (+ board.test.ts)
+    ├── pieces.ts      # Piezas y rotación (+ pieces.test.ts)
+    ├── scoring.ts     # Puntuación (+ scoring.test.ts)
+    ├── render.ts      # Dibujado en canvas
+    ├── hud.ts         # Marcadores DOM
+    ├── theme.ts       # Tema claro/oscuro
+    ├── input.ts       # Teclado
+    ├── constants.ts   # Constantes del juego
+    ├── types.ts       # Tipos compartidos
+    └── style.css      # Estilos (dark theme)
 ```
 
 ---
 
 ## Personalización
 
-Algunos parámetros fáciles de tunear en `game.js`:
+Algunos parámetros fáciles de tunear en `src/constants.ts`:
 
 | Constante      | Significado                              | Por defecto           |
 | -------------- | ---------------------------------------- | --------------------- |
