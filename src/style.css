@@ -104,6 +104,29 @@ body {
   transition: background 0.2s ease, border-color 0.2s ease;
 }
 
+.combo-callout {
+  position: absolute;
+  top: 42%;
+  left: 150px;
+  transform: translate(-50%, -50%);
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 1px;
+  text-align: center;
+  color: var(--accent);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 5;
+  white-space: nowrap;
+}
+
+.combo-callout.show {
+  opacity: 1;
+}
+
 /* ---- Panel lateral ---- */
 .panel {
   width: 160px;
@@ -134,12 +157,17 @@ body {
   letter-spacing: 1px;
 }
 
-#next-canvas {
+#next-canvas,
+#hold-canvas {
   display: block;
   border: 1px solid var(--board-border);
   background: var(--board-bg);
   border-radius: 4px;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+}
+
+.panel-section.hold-locked #hold-canvas {
+  opacity: 0.4;
 }
 
 /* ---- Controles ---- */
@@ -181,8 +209,33 @@ kbd {
   transition: background 0.2s ease;
 }
 
-.overlay.hidden {
+.hidden {
   display: none;
+}
+
+.skill-bar {
+  width: 100%;
+  height: 10px;
+  background: var(--board-bg);
+  border: 1px solid var(--board-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.skill-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+.skill-options {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  margin-top: 8px;
 }
 
 .overlay-box {
@@ -206,7 +259,8 @@ kbd {
   color: var(--accent);
 }
 
-#restart-btn {
+#restart-btn,
+.mode-btn {
   margin-top: 8px;
   background: var(--accent);
   color: var(--restart-text);
@@ -220,6 +274,14 @@ kbd {
   transition: background 0.15s;
 }
 
-#restart-btn:hover {
+#restart-btn:hover,
+.mode-btn:hover {
   background: #9bbdff;
+}
+
+.mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
 }
