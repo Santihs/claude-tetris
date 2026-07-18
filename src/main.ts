@@ -2,6 +2,7 @@ import './style.css';
 import { Game, type GameRefs } from './loop';
 import { bindInput } from './input';
 import { initTheme, toggleTheme } from './theme';
+import { applySkin, initSkin, type SkinName } from './skin';
 import type { ObjectiveId } from './challenge';
 
 const canvas = document.getElementById('board') as HTMLCanvasElement;
@@ -31,6 +32,7 @@ const overlayScore = document.getElementById('overlay-score')!;
 const restartBtn = document.getElementById('restart-btn')!;
 const themeToggleBtn = document.getElementById('theme-toggle')!;
 const themeIcon = document.getElementById('theme-icon')!;
+const skinSelect = document.getElementById('skin-select') as HTMLSelectElement;;
 
 const refs: GameRefs = {
   canvas, ctx, nextCanvas, nextCtx,
@@ -66,5 +68,15 @@ themeToggleBtn.addEventListener('click', () => {
 
 initTheme({ themeToggleBtn, themeIcon }, gridLineColor => {
   game.gridLineColor = gridLineColor;
+  if (game.board) game.draw();
+});
+
+skinSelect.addEventListener('change', () => {
+  applySkin(skinSelect.value as SkinName, { skinSelect }, () => {
+    if (game.board) game.draw();
+  });
+});
+
+initSkin({ skinSelect }, () => {
   if (game.board) game.draw();
 });

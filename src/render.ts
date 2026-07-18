@@ -1,5 +1,6 @@
-import { BLOCK, COLORS, COLS, ROWS } from './constants';
+import { BLOCK, COLS, ROWS } from './constants';
 import { collide } from './board';
+import { getCurrentSkin, getPalette } from './skin';
 import type { Board, Piece, Shape } from './types';
 
 export function drawBlock(
@@ -11,12 +12,48 @@ export function drawBlock(
   alpha?: number,
 ): void {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
+  const skin = getCurrentSkin();
+  const color = getPalette(skin)[colorIndex] as string;
   context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color as string;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+
+  if (skin === 'neon') {
+    // Glowing filled square with canvas shadow bloom
+    context.shadowColor = color;
+    context.shadowBlur = size * 0.55;
+    context.fillStyle = color;
+    context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+    context.shadowBlur = 0;
+  } else if (skin === 'pastel') {
+    // Rounded rectangle with a soft white top highlight
+    const radius = Math.max(3, size * 0.2);
+    context.fillStyle = color;
+    context.beginPath();
+    context.roundRect(x * size + 1, y * size + 1, size - 2, size - 2, radius);
+    context.fill();
+    context.fillStyle = 'rgba(255,255,255,0.22)';
+    context.beginPath();
+    context.roundRect(x * size + 1, y * size + 1, size - 2, Math.max(3, size * 0.18), radius);
+    context.fill();
+  } else if (skin === 'pixel-art') {
+    // Edge-to-edge fill with chiselled 2-px border (light top-left, dark bottom-right)
+    context.fillStyle = color;
+    context.fillRect(x * size, y * size, size, size);
+    // Dark shadow — bottom and right edges
+    context.fillStyle = 'rgba(0,0,0,0.38)';
+    context.fillRect(x * size, y * size + size - 2, size, 2);
+    context.fillRect(x * size + size - 2, y * size, 2, size);
+    // Light highlight — top and left edges
+    context.fillStyle = 'rgba(255,255,255,0.40)';
+    context.fillRect(x * size, y * size, size, 2);
+    context.fillRect(x * size, y * size, 2, size);
+  } else {
+    // Retro — flat square with a thin white top shine (original behaviour)
+    context.fillStyle = color;
+    context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+    context.fillStyle = 'rgba(255,255,255,0.12)';
+    context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  }
+
   context.globalAlpha = 1;
 }
 

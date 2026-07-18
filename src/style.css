@@ -285,3 +285,38 @@ kbd {
   gap: 8px;
   margin-top: 10px;
 }
+
+/* ---- Skin selector ---- */
+.skin-select {
+  height: 32px;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid var(--toggle-border);
+  background: var(--toggle-bg);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 11px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 600;
+  letter-spacing: 1px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  outline: none;
+}
+
+.skin-select:hover {
+  transform: scale(1.04);
+}
+
+/* ---- Neon skin overrides ---- */
+/* All canvases need a black background so clearRect reveals black, not the page bg */
+body[data-skin='neon'] #board,
+body[data-skin='neon'] #next-canvas,
+body[data-skin='neon'] #hold-canvas,
+body[data-skin='neon'] #queue-preview-canvas {
+  background: #000;
+  border-color: #333;
+}
+
+body[data-skin='neon'] {
+  --grid-line: #1a1a1a;
+}
