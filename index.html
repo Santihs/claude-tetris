@@ -79,6 +79,14 @@
         <div class="overlay-box">
           <p id="overlay-title">GAME OVER</p>
           <p id="overlay-score"></p>
+          <div id="overlay-name-section" class="overlay-name-section hidden">
+            <p class="overlay-name-label">TOP 5 — ingresa tu nombre:</p>
+            <div class="overlay-name-row">
+              <input id="overlay-name-input" type="text" class="overlay-name-input" placeholder="Tu nombre" maxlength="20" />
+              <button id="overlay-save-btn" class="mode-btn overlay-save-btn">Guardar</button>
+            </div>
+          </div>
+          <div id="overlay-high-scores" class="overlay-scores"></div>
           <button id="restart-btn">Reiniciar</button>
         </div>
       </div>
@@ -105,6 +113,8 @@
             <button class="mode-btn" data-mode="survival">Desafío: Supervivencia</button>
             <button class="mode-btn" data-mode="preset-blocks">Desafío: Bloques fijos</button>
           </div>
+          <div id="mode-select-high-scores" class="overlay-scores"></div>
+          <button id="scores-reset-btn" class="scores-reset-btn">Borrar récords</button>
         </div>
       </div>
     </div>
