@@ -3,6 +3,7 @@ import { Game, type GameRefs } from './loop';
 import { bindInput } from './input';
 import { initTheme, toggleTheme } from './theme';
 import { applySkin, initSkin, type SkinName } from './skin';
+import { insertScore, resetScores, renderScoresTable } from './scores';
 import type { ObjectiveId } from './challenge';
 
 const canvas = document.getElementById('board') as HTMLCanvasElement;
@@ -30,6 +31,12 @@ const overlay = document.getElementById('overlay')!;
 const overlayTitle = document.getElementById('overlay-title')!;
 const overlayScore = document.getElementById('overlay-score')!;
 const restartBtn = document.getElementById('restart-btn')!;
+const overlayNameSection = document.getElementById('overlay-name-section')!;
+const overlayNameInput = document.getElementById('overlay-name-input') as HTMLInputElement;
+const overlaySaveBtn = document.getElementById('overlay-save-btn')!;
+const overlayHighScores = document.getElementById('overlay-high-scores')!;
+const modeSelectHighScores = document.getElementById('mode-select-high-scores')!;
+const scoresResetBtn = document.getElementById('scores-reset-btn')!;
 const themeToggleBtn = document.getElementById('theme-toggle')!;
 const themeIcon = document.getElementById('theme-icon')!;
 const skinSelect = document.getElementById('skin-select') as HTMLSelectElement;;
@@ -41,11 +48,37 @@ const refs: GameRefs = {
   objectiveSection, objectiveLabelEl, objectiveValueEl, modeSelect,
   scoreEl, linesEl, levelEl,
   overlay, overlayTitle, overlayScore,
+  overlayNameSection, overlayNameInput, overlayHighScores, modeSelectHighScores,
 };
 
 const game = new Game(refs);
 
 restartBtn.addEventListener('click', () => game.restart());
+
+overlaySaveBtn.addEventListener('click', () => {
+  const name = overlayNameInput.value.trim() || 'Jugador';
+  const { rank } = insertScore({
+    name,
+    score: game.score,
+    lines: game.lines,
+    bestCombo: game.peakCombo,
+    date: new Date().toLocaleDateString('es'),
+  });
+  overlayNameSection.classList.add('hidden');
+  renderScoresTable(overlayHighScores, rank ?? undefined);
+  renderScoresTable(modeSelectHighScores);
+});
+
+// Allow submitting the name with Enter key
+overlayNameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') overlaySaveBtn.click();
+});
+
+scoresResetBtn.addEventListener('click', () => {
+  resetScores();
+  renderScoresTable(modeSelectHighScores);
+});
+
 bindInput(game);
 
 for (const btn of modeSelect.querySelectorAll<HTMLButtonElement>('.mode-btn')) {
@@ -80,3 +113,6 @@ skinSelect.addEventListener('change', () => {
 initSkin({ skinSelect }, () => {
   if (game.board) game.draw();
 });
+
+// Render stored scores on the start screen immediately
+renderScoresTable(modeSelectHighScores);

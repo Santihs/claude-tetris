@@ -15,6 +15,7 @@ import {
   type ObjectiveId, type ObjectiveState,
 } from './challenge';
 import type { Board, Piece } from './types';
+import { isTopFive, renderScoresTable } from './scores';
 
 export type GameMode = 'endless' | 'challenge';
 
@@ -40,6 +41,10 @@ export interface GameRefs extends HudRefs {
   overlay: HTMLElement;
   overlayTitle: HTMLElement;
   overlayScore: HTMLElement;
+  overlayNameSection: HTMLElement;
+  overlayNameInput: HTMLInputElement;
+  overlayHighScores: HTMLElement;
+  modeSelectHighScores: HTMLElement;
 }
 
 export interface UndoSnapshot {
@@ -73,6 +78,7 @@ export class Game {
   slowTimeUntil: number | null = null;
   peekUntil: number | null = null;
   comboCount = 0;
+  peakCombo = 0;
   lastClearWasTetris = false;
   lastActionWasRotation = false;
   lastTSpinFlag = false;
@@ -177,6 +183,7 @@ export class Game {
       this.dropInterval = result.dropIntervalAfter;
 
       this.comboCount++;
+      if (this.comboCount > this.peakCombo) this.peakCombo = this.comboCount;
       const isTetris = result.cleared === 4;
       const isBackToBack = isTetris && this.lastClearWasTetris;
 
@@ -308,6 +315,17 @@ export class Game {
     }
     this.refs.overlayScore.textContent = `Puntuación: ${this.score.toLocaleString()}`;
     this.refs.overlay.classList.remove('hidden');
+    this.showScorePrompt();
+  }
+
+  private showScorePrompt(): void {
+    if (isTopFive(this.score)) {
+      this.refs.overlayNameInput.value = '';
+      this.refs.overlayNameSection.classList.remove('hidden');
+    } else {
+      this.refs.overlayNameSection.classList.add('hidden');
+    }
+    renderScoresTable(this.refs.overlayHighScores);
   }
 
   togglePause(): void {
@@ -320,6 +338,8 @@ export class Game {
       cancelAnimationFrame(this.animId);
       this.refs.overlayTitle.textContent = 'PAUSA';
       this.refs.overlayScore.textContent = '';
+      this.refs.overlayNameSection.classList.add('hidden');
+      this.refs.overlayHighScores.innerHTML = '';
       this.refs.overlay.classList.remove('hidden');
     }
   }
@@ -418,6 +438,7 @@ export class Game {
     this.slowTimeUntil = null;
     this.peekUntil = null;
     this.comboCount = 0;
+    this.peakCombo = 0;
     this.lastClearWasTetris = false;
     this.lastActionWasRotation = false;
     this.lastTSpinFlag = false;
@@ -473,6 +494,7 @@ export class Game {
     this.refs.overlayTitle.textContent = this.objective.status === 'won' ? '¡OBJETIVO CUMPLIDO!' : 'DESAFÍO FALLIDO';
     this.refs.overlayScore.textContent = `Puntuación: ${this.score.toLocaleString()}`;
     this.refs.overlay.classList.remove('hidden');
+    this.showScorePrompt();
   }
 
   /** Restart button: endless mode restarts endless, challenge mode returns to mode-select. */
@@ -485,6 +507,7 @@ export class Game {
       this.refs.overlay.classList.add('hidden');
       this.refs.objectiveSection.classList.add('hidden');
       this.refs.modeSelect.classList.remove('hidden');
+      renderScoresTable(this.refs.modeSelectHighScores);
     } else {
       this.init('endless');
     }
