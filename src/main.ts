@@ -32,6 +32,16 @@ const restartBtn = document.getElementById('restart-btn')!;
 const themeToggleBtn = document.getElementById('theme-toggle')!;
 const themeIcon = document.getElementById('theme-icon')!;
 
+// Pause menu elements
+const pauseMenuOverlay = document.getElementById('pause-menu')!;
+const pauseLevelValueEl = document.getElementById('pause-level-value')!;
+const pauseResumeBtn = document.getElementById('pause-resume-btn')!;
+const pauseRestartBtn = document.getElementById('pause-restart-btn')!;
+const pauseControlsBtn = document.getElementById('pause-controls-btn')!;
+const pauseControlsSection = document.getElementById('pause-controls-section')!;
+const pauseLevelDecBtn = document.getElementById('pause-level-dec')!;
+const pauseLevelIncBtn = document.getElementById('pause-level-inc')!;
+
 const refs: GameRefs = {
   canvas, ctx, nextCanvas, nextCtx,
   holdCanvas, holdCtx, holdSection, powerUpProgressEl, comboCalloutEl,
@@ -39,12 +49,35 @@ const refs: GameRefs = {
   objectiveSection, objectiveLabelEl, objectiveValueEl, modeSelect,
   scoreEl, linesEl, levelEl,
   overlay, overlayTitle, overlayScore,
+  pauseMenuOverlay, pauseLevelValueEl,
 };
 
 const game = new Game(refs);
 
 restartBtn.addEventListener('click', () => game.restart());
 bindInput(game);
+
+// Pause menu button handlers
+pauseResumeBtn.addEventListener('click', () => {
+  if (game.paused) game.togglePause();
+});
+
+pauseRestartBtn.addEventListener('click', () => {
+  game.restart();
+});
+
+pauseControlsBtn.addEventListener('click', () => {
+  const isHidden = pauseControlsSection.classList.toggle('hidden');
+  pauseControlsBtn.textContent = isHidden ? 'Ver controles' : 'Ocultar controles';
+});
+
+pauseLevelDecBtn.addEventListener('click', () => {
+  game.setPendingLevel(game.pendingStartLevel - 1);
+});
+
+pauseLevelIncBtn.addEventListener('click', () => {
+  game.setPendingLevel(game.pendingStartLevel + 1);
+});
 
 for (const btn of modeSelect.querySelectorAll<HTMLButtonElement>('.mode-btn')) {
   btn.addEventListener('click', () => {

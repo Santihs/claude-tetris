@@ -18,6 +18,18 @@ import type { Board, Piece } from './types';
 
 export type GameMode = 'endless' | 'challenge';
 
+export const MAX_START_LEVEL = 15;
+
+/** Returns the gravity drop interval (ms) for a given level — same formula used by clearLines. */
+export function dropIntervalForLevel(level: number): number {
+  return Math.max(100, 1000 - (level - 1) * 90);
+}
+
+/** Clamps a candidate starting level to the valid range [1, MAX_START_LEVEL]. */
+export function clampStartLevel(n: number): number {
+  return Math.max(1, Math.min(MAX_START_LEVEL, n));
+}
+
 export interface GameRefs extends HudRefs {
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
@@ -40,6 +52,8 @@ export interface GameRefs extends HudRefs {
   overlay: HTMLElement;
   overlayTitle: HTMLElement;
   overlayScore: HTMLElement;
+  pauseMenuOverlay: HTMLElement;
+  pauseLevelValueEl: HTMLElement;
 }
 
 export interface UndoSnapshot {
@@ -79,6 +93,8 @@ export class Game {
   skillEnergy = 0;
   skillReady = false;
   skillMenuOpen = false;
+  pauseMenuOpen = false;
+  pendingStartLevel = 1;
   undoSnapshot: UndoSnapshot | null = null;
   private pendingUndoSnapshot: UndoSnapshot | null = null;
   gameMode: GameMode = 'endless';
@@ -314,14 +330,31 @@ export class Game {
     if (!this.started || this.gameOver || this.skillMenuOpen) return;
     this.paused = !this.paused;
     if (!this.paused) {
-      this.lastTime = performance.now();
-      this.loop(this.lastTime);
+      this.closePauseMenu();
     } else {
       cancelAnimationFrame(this.animId);
-      this.refs.overlayTitle.textContent = 'PAUSA';
-      this.refs.overlayScore.textContent = '';
-      this.refs.overlay.classList.remove('hidden');
+      this.openPauseMenu();
     }
+  }
+
+  openPauseMenu(): void {
+    this.pauseMenuOpen = true;
+    this.refs.pauseMenuOverlay.classList.remove('hidden');
+  }
+
+  closePauseMenu(): void {
+    this.pauseMenuOpen = false;
+    this.refs.pauseMenuOverlay.classList.add('hidden');
+    if (!this.gameOver) {
+      this.lastTime = performance.now();
+      this.loop(this.lastTime);
+    }
+  }
+
+  /** Update the pending starting level (persists across restarts, clamped to [1, MAX_START_LEVEL]). */
+  setPendingLevel(n: number): void {
+    this.pendingStartLevel = clampStartLevel(n);
+    this.refs.pauseLevelValueEl.textContent = String(this.pendingStartLevel);
   }
 
   openSkillMenu(): void {
@@ -401,11 +434,13 @@ export class Game {
   init(mode: GameMode = 'endless', objectiveId?: ObjectiveId): void {
     this.board = createBoard();
     this.score = 0;
-    this.lines = 0;
-    this.level = 1;
+    // Seed lines so that level advancement stays consistent with pendingStartLevel.
+    // At level N, lines = (N-1)*10, which satisfies floor(lines/10)+1 === N.
+    this.lines = (this.pendingStartLevel - 1) * 10;
+    this.level = this.pendingStartLevel;
     this.paused = false;
     this.gameOver = false;
-    this.dropInterval = 1000;
+    this.dropInterval = dropIntervalForLevel(this.pendingStartLevel);
     this.dropAccum = 0;
     this.lastTime = performance.now();
     this.hold = null;
@@ -424,9 +459,11 @@ export class Game {
     this.skillEnergy = 0;
     this.skillReady = false;
     this.skillMenuOpen = false;
+    this.pauseMenuOpen = false;
     this.undoSnapshot = null;
     this.started = true;
     this.refs.skillOverlay.classList.add('hidden');
+    this.refs.pauseMenuOverlay.classList.add('hidden');
     this.refs.modeSelect.classList.add('hidden');
     this.updateSkillBar();
 
@@ -482,6 +519,8 @@ export class Game {
       this.gameMode = 'endless';
       this.objective = null;
       cancelAnimationFrame(this.animId);
+      this.pauseMenuOpen = false;
+      this.refs.pauseMenuOverlay.classList.add('hidden');
       this.refs.overlay.classList.add('hidden');
       this.refs.objectiveSection.classList.add('hidden');
       this.refs.modeSelect.classList.remove('hidden');

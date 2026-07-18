@@ -107,6 +107,36 @@
           </div>
         </div>
       </div>
+
+      <div id="pause-menu" class="overlay hidden">
+        <div class="overlay-box pause-menu-box">
+          <p class="pause-menu-title">PAUSADO</p>
+          <div class="pause-menu-actions">
+            <button id="pause-resume-btn" class="pause-menu-btn">Reanudar</button>
+            <button id="pause-restart-btn" class="pause-menu-btn">Reiniciar</button>
+            <button id="pause-controls-btn" class="pause-menu-btn pause-menu-btn--secondary">Ver controles</button>
+          </div>
+          <div class="pause-level-selector">
+            <span class="label">NIVEL INICIAL</span>
+            <div class="pause-level-controls">
+              <button id="pause-level-dec" type="button" class="pause-level-btn" aria-label="Bajar nivel">−</button>
+              <span id="pause-level-value" class="pause-level-value">1</span>
+              <button id="pause-level-inc" type="button" class="pause-level-btn" aria-label="Subir nivel">+</button>
+            </div>
+          </div>
+          <div id="pause-controls-section" class="pause-controls-list hidden">
+            <ul>
+              <li><kbd>←</kbd><kbd>→</kbd> mover</li>
+              <li><kbd>↑</kbd> / <kbd>X</kbd> rotar</li>
+              <li><kbd>↓</kbd> bajar</li>
+              <li><kbd>Space</kbd> caída rápida</li>
+              <li><kbd>C</kbd> / <kbd>Shift</kbd> hold</li>
+              <li><kbd>V</kbd> habilidad</li>
+              <li><kbd>P</kbd> / <kbd>Esc</kbd> pausar</li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
