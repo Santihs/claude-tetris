@@ -79,6 +79,11 @@
         <div class="overlay-box" id="game-over-box">
           <p id="overlay-title">GAME OVER</p>
           <p id="overlay-score"></p>
+          <div id="high-score-entry" class="high-score-entry hidden">
+            <p class="high-score-entry-label">¡Nueva puntuación alta!</p>
+            <input id="high-score-name-input" type="text" maxlength="12" placeholder="Tu nombre" autocomplete="off" />
+            <button id="high-score-save-btn" type="button">Guardar</button>
+          </div>
           <button id="restart-btn">Reiniciar</button>
         </div>
 
@@ -129,6 +134,23 @@
             <button class="mode-btn" data-mode="sprint">Desafío: Sprint 40 líneas</button>
             <button class="mode-btn" data-mode="survival">Desafío: Supervivencia</button>
             <button class="mode-btn" data-mode="preset-blocks">Desafío: Bloques fijos</button>
+          </div>
+
+          <div class="high-scores-section">
+            <p class="high-scores-title">Mejores puntuaciones</p>
+            <table class="high-scores-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nombre</th>
+                  <th>Puntos</th>
+                  <th>Líneas</th>
+                  <th>Combo</th>
+                </tr>
+              </thead>
+              <tbody id="high-scores-table-body"></tbody>
+            </table>
+            <button id="high-scores-reset-btn" class="high-scores-reset-btn" type="button">Reiniciar tabla</button>
           </div>
         </div>
       </div>
