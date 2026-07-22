@@ -104,6 +104,25 @@ body {
   transition: background 0.2s ease, border-color 0.2s ease;
 }
 
+/* Neon skin forces a dark board background so glow/shadowBlur block effects
+   read correctly, independent of the light/dark theme (`data-theme`). This
+   is scoped to #board only — it never touches the theme's `--bg`/body. */
+body[data-skin='neon'] #board {
+  background: #05050d;
+  border-color: #2a2a3a;
+  box-shadow: 0 0 40px rgba(122, 162, 247, 0.25);
+}
+
+.skin-select {
+  border-radius: 6px;
+  border: 1px solid var(--toggle-border);
+  background: var(--toggle-bg);
+  color: var(--text);
+  font-size: 12px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
 .combo-callout {
   position: absolute;
   top: 42%;
