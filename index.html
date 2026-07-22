@@ -9,6 +9,12 @@
   <div class="wrapper">
     <div class="header-row">
       <h1 class="game-title">Claude Tetris</h1>
+      <select id="skin-select" class="skin-select" aria-label="Elegir skin visual" title="Skin visual">
+        <option value="retro">Retro</option>
+        <option value="neon">Neon</option>
+        <option value="pastel">Pastel</option>
+        <option value="pixel">Pixel art</option>
+      </select>
       <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Cambiar a modo claro" title="Cambiar tema">
         <span id="theme-icon">🌙</span>
       </button>
@@ -70,16 +76,46 @@
             <li><kbd>Space</kbd> caída</li>
             <li><kbd>C</kbd> / <kbd>Shift</kbd> hold</li>
             <li><kbd>V</kbd> habilidad</li>
-            <li><kbd>P</kbd> pausa</li>
+            <li><kbd>P</kbd> / <kbd>Esc</kbd> pausa</li>
           </ul>
         </div>
       </aside>
 
       <div id="overlay" class="overlay hidden">
-        <div class="overlay-box">
+        <div class="overlay-box" id="game-over-box">
           <p id="overlay-title">GAME OVER</p>
           <p id="overlay-score"></p>
+          <div id="high-score-entry" class="high-score-entry hidden">
+            <p class="high-score-entry-label">¡Nueva puntuación alta!</p>
+            <input id="high-score-name-input" type="text" maxlength="12" placeholder="Tu nombre" autocomplete="off" />
+            <button id="high-score-save-btn" type="button">Guardar</button>
+          </div>
           <button id="restart-btn">Reiniciar</button>
+        </div>
+
+        <div class="overlay-box hidden" id="pause-menu-box">
+          <p id="pause-title">PAUSA</p>
+
+          <div class="pause-level-select">
+            <label for="pause-level-input">Nivel inicial (próxima partida)</label>
+            <input type="number" id="pause-level-input" min="1" max="15" value="1" />
+          </div>
+
+          <div class="pause-menu-options">
+            <button id="pause-resume-btn" class="pause-btn">Reanudar</button>
+            <button id="pause-restart-btn" class="pause-btn">Reiniciar partida</button>
+            <button id="pause-controls-btn" class="pause-btn" aria-expanded="false">Controles</button>
+          </div>
+
+          <ul class="controls-list hidden" id="pause-controls-list">
+            <li><kbd>←</kbd><kbd>→</kbd> mover</li>
+            <li><kbd>↑</kbd> / <kbd>X</kbd> rotar</li>
+            <li><kbd>↓</kbd> caída suave</li>
+            <li><kbd>Space</kbd> caída dura</li>
+            <li><kbd>C</kbd> / <kbd>Shift</kbd> hold</li>
+            <li><kbd>V</kbd> habilidad</li>
+            <li><kbd>P</kbd> / <kbd>Esc</kbd> pausa</li>
+          </ul>
         </div>
       </div>
 
@@ -104,6 +140,23 @@
             <button class="mode-btn" data-mode="sprint">Desafío: Sprint 40 líneas</button>
             <button class="mode-btn" data-mode="survival">Desafío: Supervivencia</button>
             <button class="mode-btn" data-mode="preset-blocks">Desafío: Bloques fijos</button>
+          </div>
+
+          <div class="high-scores-section">
+            <p class="high-scores-title">Mejores puntuaciones</p>
+            <table class="high-scores-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Nombre</th>
+                  <th>Puntos</th>
+                  <th>Líneas</th>
+                  <th>Combo</th>
+                </tr>
+              </thead>
+              <tbody id="high-scores-table-body"></tbody>
+            </table>
+            <button id="high-scores-reset-btn" class="high-scores-reset-btn" type="button">Reiniciar tabla</button>
           </div>
         </div>
       </div>

@@ -2,6 +2,8 @@ import './style.css';
 import { Game, type GameRefs } from './loop';
 import { bindInput } from './input';
 import { initTheme, toggleTheme } from './theme';
+import { loadHighScores, resetHighScores, renderHighScores } from './scores';
+import { getSkin, initSkin, isSkinId, setSkin } from './skin';
 import type { ObjectiveId } from './challenge';
 
 const canvas = document.getElementById('board') as HTMLCanvasElement;
@@ -29,8 +31,21 @@ const overlay = document.getElementById('overlay')!;
 const overlayTitle = document.getElementById('overlay-title')!;
 const overlayScore = document.getElementById('overlay-score')!;
 const restartBtn = document.getElementById('restart-btn')!;
+const gameOverBox = document.getElementById('game-over-box')!;
+const pauseMenuBox = document.getElementById('pause-menu-box')!;
+const pauseResumeBtn = document.getElementById('pause-resume-btn')!;
+const pauseRestartBtn = document.getElementById('pause-restart-btn')!;
+const pauseControlsBtn = document.getElementById('pause-controls-btn')!;
+const pauseControlsList = document.getElementById('pause-controls-list')!;
+const pauseLevelInput = document.getElementById('pause-level-input') as HTMLInputElement;
 const themeToggleBtn = document.getElementById('theme-toggle')!;
 const themeIcon = document.getElementById('theme-icon')!;
+const highScoreEntryEl = document.getElementById('high-score-entry')!;
+const highScoreNameInput = document.getElementById('high-score-name-input') as HTMLInputElement;
+const highScoreSaveBtn = document.getElementById('high-score-save-btn') as HTMLButtonElement;
+const highScoresTableBody = document.getElementById('high-scores-table-body')!;
+const highScoresResetBtn = document.getElementById('high-scores-reset-btn')!;
+const skinSelect = document.getElementById('skin-select') as HTMLSelectElement;
 
 const refs: GameRefs = {
   canvas, ctx, nextCanvas, nextCtx,
@@ -38,13 +53,39 @@ const refs: GameRefs = {
   skillBarFillEl, skillOverlay, queuePreviewCanvas, queuePreviewCtx, queuePreviewSection,
   objectiveSection, objectiveLabelEl, objectiveValueEl, modeSelect,
   scoreEl, linesEl, levelEl,
-  overlay, overlayTitle, overlayScore,
+  overlay, overlayTitle, overlayScore, gameOverBox, pauseMenuBox, pauseLevelInput,
+  restartBtn, highScoreEntryEl, highScoreNameInput, highScoreSaveBtn, highScoresTableBody,
 };
 
 const game = new Game(refs);
 
 restartBtn.addEventListener('click', () => game.restart());
 bindInput(game);
+
+pauseResumeBtn.addEventListener('click', () => game.togglePause());
+pauseRestartBtn.addEventListener('click', () => game.restart());
+pauseControlsBtn.addEventListener('click', () => {
+  const nowHidden = pauseControlsList.classList.toggle('hidden');
+  pauseControlsBtn.setAttribute('aria-expanded', String(!nowHidden));
+});
+pauseLevelInput.addEventListener('change', () => {
+  game.setPendingStartLevel(Number(pauseLevelInput.value));
+});
+
+renderHighScores(highScoresTableBody, loadHighScores());
+
+highScoreSaveBtn.addEventListener('click', () => game.submitHighScoreName(highScoreNameInput.value));
+highScoreNameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    game.submitHighScoreName(highScoreNameInput.value);
+  }
+});
+
+highScoresResetBtn.addEventListener('click', () => {
+  resetHighScores();
+  renderHighScores(highScoresTableBody, []);
+});
 
 for (const btn of modeSelect.querySelectorAll<HTMLButtonElement>('.mode-btn')) {
   btn.addEventListener('click', () => {
@@ -68,3 +109,19 @@ initTheme({ themeToggleBtn, themeIcon }, gridLineColor => {
   game.gridLineColor = gridLineColor;
   if (game.board) game.draw();
 });
+
+function applySkinAttribute(skin: string): void {
+  document.body.dataset.skin = skin;
+}
+
+skinSelect.addEventListener('change', () => {
+  const value = skinSelect.value;
+  if (!isSkinId(value)) return;
+  setSkin(value);
+  applySkinAttribute(value);
+  if (game.board) game.draw();
+});
+
+const restoredSkin = initSkin();
+skinSelect.value = restoredSkin;
+applySkinAttribute(getSkin());

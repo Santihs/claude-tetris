@@ -12,7 +12,7 @@ export function bindInput(game: Game): void {
       if (skillId) applySkill(game, skillId);
       return;
     }
-    if (e.code === 'KeyP') { game.togglePause(); return; }
+    if (e.code === 'KeyP' || e.code === 'Escape') { game.togglePause(); return; }
     if (e.code === 'KeyV') { game.openSkillMenu(); return; }
     if (game.paused || game.gameOver) return;
     switch (e.code) {

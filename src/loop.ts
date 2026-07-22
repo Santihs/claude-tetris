@@ -14,6 +14,8 @@ import {
   startObjective, updateObjective, insertGarbageRow, applyPresetBlocks,
   type ObjectiveId, type ObjectiveState,
 } from './challenge';
+import { clampLevel, dropIntervalForLevel } from './level';
+import { qualifiesForHighScore, addHighScore, renderHighScores, type HighScoreEntry } from './scores';
 import type { Board, Piece } from './types';
 
 export type GameMode = 'endless' | 'challenge';
@@ -40,6 +42,14 @@ export interface GameRefs extends HudRefs {
   overlay: HTMLElement;
   overlayTitle: HTMLElement;
   overlayScore: HTMLElement;
+  gameOverBox: HTMLElement;
+  pauseMenuBox: HTMLElement;
+  pauseLevelInput: HTMLInputElement;
+  restartBtn: HTMLElement;
+  highScoreEntryEl: HTMLElement;
+  highScoreNameInput: HTMLInputElement;
+  highScoreSaveBtn: HTMLButtonElement;
+  highScoresTableBody: HTMLElement;
 }
 
 export interface UndoSnapshot {
@@ -73,6 +83,8 @@ export class Game {
   slowTimeUntil: number | null = null;
   peekUntil: number | null = null;
   comboCount = 0;
+  maxCombo = 0;
+  highScoreQualified = false;
   lastClearWasTetris = false;
   lastActionWasRotation = false;
   lastTSpinFlag = false;
@@ -84,6 +96,8 @@ export class Game {
   gameMode: GameMode = 'endless';
   objective: ObjectiveState | null = null;
   started = false;
+  /** Starting level chosen from the pause menu's level selector; applied by init() on the next new game/restart. */
+  pendingStartLevel = 1;
   score = 0;
   lines = 0;
   level = 1;
@@ -96,6 +110,12 @@ export class Game {
   gridLineColor = '#22222e';
 
   constructor(public refs: GameRefs) {}
+
+  /** Called from the pause menu's level-select input; clamps into [1, 15] and stores for the next init(). */
+  setPendingStartLevel(level: number): void {
+    this.pendingStartLevel = clampLevel(level);
+    this.refs.pauseLevelInput.value = String(this.pendingStartLevel);
+  }
 
   spawn(): void {
     this.current = this.queue.shift()!;
@@ -177,6 +197,7 @@ export class Game {
       this.dropInterval = result.dropIntervalAfter;
 
       this.comboCount++;
+      this.maxCombo = Math.max(this.maxCombo, this.comboCount - 1);
       const isTetris = result.cleared === 4;
       const isBackToBack = isTetris && this.lastClearWasTetris;
 
@@ -307,19 +328,49 @@ export class Game {
       this.refs.overlayTitle.textContent = 'GAME OVER';
     }
     this.refs.overlayScore.textContent = `Puntuación: ${this.score.toLocaleString()}`;
+    this.refs.pauseMenuBox.classList.add('hidden');
+    this.refs.gameOverBox.classList.remove('hidden');
     this.refs.overlay.classList.remove('hidden');
+    this.checkHighScoreQualification();
+  }
+
+  private checkHighScoreQualification(): void {
+    this.highScoreQualified = qualifiesForHighScore(this.score);
+    this.refs.highScoreEntryEl.classList.toggle('hidden', !this.highScoreQualified);
+    this.refs.restartBtn.classList.toggle('hidden', this.highScoreQualified);
+    if (this.highScoreQualified) {
+      this.refs.highScoreNameInput.value = '';
+      this.refs.highScoreNameInput.focus();
+    }
+  }
+
+  /** Called by the name-entry Save button/Enter key once a run qualifies for the top-5. */
+  submitHighScoreName(rawName: string): void {
+    if (!this.highScoreQualified) return;
+    const name = rawName.trim().slice(0, 12) || 'AAA';
+    const entry: HighScoreEntry = {
+      name, score: this.score, lines: this.lines, maxCombo: this.maxCombo, date: new Date().toISOString(),
+    };
+    const updated = addHighScore(entry);
+    renderHighScores(this.refs.highScoresTableBody, updated, updated.indexOf(entry));
+    this.highScoreQualified = false;
+    this.refs.highScoreEntryEl.classList.add('hidden');
+    this.refs.restartBtn.classList.remove('hidden');
   }
 
   togglePause(): void {
     if (!this.started || this.gameOver || this.skillMenuOpen) return;
     this.paused = !this.paused;
     if (!this.paused) {
+      this.refs.overlay.classList.add('hidden');
+      this.refs.pauseMenuBox.classList.add('hidden');
       this.lastTime = performance.now();
       this.loop(this.lastTime);
     } else {
       cancelAnimationFrame(this.animId);
-      this.refs.overlayTitle.textContent = 'PAUSA';
-      this.refs.overlayScore.textContent = '';
+      this.refs.pauseLevelInput.value = String(this.pendingStartLevel);
+      this.refs.gameOverBox.classList.add('hidden');
+      this.refs.pauseMenuBox.classList.remove('hidden');
       this.refs.overlay.classList.remove('hidden');
     }
   }
@@ -402,10 +453,10 @@ export class Game {
     this.board = createBoard();
     this.score = 0;
     this.lines = 0;
-    this.level = 1;
+    this.level = this.pendingStartLevel;
     this.paused = false;
     this.gameOver = false;
-    this.dropInterval = 1000;
+    this.dropInterval = dropIntervalForLevel(this.pendingStartLevel);
     this.dropAccum = 0;
     this.lastTime = performance.now();
     this.hold = null;
@@ -418,6 +469,8 @@ export class Game {
     this.slowTimeUntil = null;
     this.peekUntil = null;
     this.comboCount = 0;
+    this.maxCombo = 0;
+    this.highScoreQualified = false;
     this.lastClearWasTetris = false;
     this.lastActionWasRotation = false;
     this.lastTSpinFlag = false;
@@ -428,6 +481,8 @@ export class Game {
     this.started = true;
     this.refs.skillOverlay.classList.add('hidden');
     this.refs.modeSelect.classList.add('hidden');
+    this.refs.highScoreEntryEl.classList.add('hidden');
+    this.refs.restartBtn.classList.remove('hidden');
     this.updateSkillBar();
 
     this.gameMode = mode;
@@ -440,6 +495,8 @@ export class Game {
     this.drawHold();
     this.updateHUD();
     this.refs.overlay.classList.add('hidden');
+    this.refs.pauseMenuBox.classList.add('hidden');
+    this.refs.gameOverBox.classList.remove('hidden');
     cancelAnimationFrame(this.animId);
     this.animId = requestAnimationFrame(this.loop);
   }
@@ -472,17 +529,22 @@ export class Game {
     cancelAnimationFrame(this.animId);
     this.refs.overlayTitle.textContent = this.objective.status === 'won' ? '¡OBJETIVO CUMPLIDO!' : 'DESAFÍO FALLIDO';
     this.refs.overlayScore.textContent = `Puntuación: ${this.score.toLocaleString()}`;
+    this.refs.pauseMenuBox.classList.add('hidden');
+    this.refs.gameOverBox.classList.remove('hidden');
     this.refs.overlay.classList.remove('hidden');
+    this.checkHighScoreQualification();
   }
 
   /** Restart button: endless mode restarts endless, challenge mode returns to mode-select. */
   restart(): void {
     if (this.gameMode === 'challenge') {
       this.started = false;
+      this.paused = false;
       this.gameMode = 'endless';
       this.objective = null;
       cancelAnimationFrame(this.animId);
       this.refs.overlay.classList.add('hidden');
+      this.refs.pauseMenuBox.classList.add('hidden');
       this.refs.objectiveSection.classList.add('hidden');
       this.refs.modeSelect.classList.remove('hidden');
     } else {

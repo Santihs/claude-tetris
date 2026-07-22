@@ -104,6 +104,25 @@ body {
   transition: background 0.2s ease, border-color 0.2s ease;
 }
 
+/* Neon skin forces a dark board background so glow/shadowBlur block effects
+   read correctly, independent of the light/dark theme (`data-theme`). This
+   is scoped to #board only — it never touches the theme's `--bg`/body. */
+body[data-skin='neon'] #board {
+  background: #05050d;
+  border-color: #2a2a3a;
+  box-shadow: 0 0 40px rgba(122, 162, 247, 0.25);
+}
+
+.skin-select {
+  border-radius: 6px;
+  border: 1px solid var(--toggle-border);
+  background: var(--toggle-bg);
+  color: var(--text);
+  font-size: 12px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
 .combo-callout {
   position: absolute;
   top: 42%;
@@ -284,4 +303,180 @@ kbd {
   flex-direction: column;
   gap: 8px;
   margin-top: 10px;
+}
+
+/* ---- Pause menu ---- */
+#pause-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--overlay-title);
+}
+
+.pause-menu-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.pause-btn {
+  background: var(--accent);
+  color: var(--restart-text);
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s;
+}
+
+.pause-btn:hover {
+  background: #9bbdff;
+}
+
+.pause-level-select {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--controls-text);
+}
+
+.pause-level-select input {
+  width: 64px;
+  align-self: center;
+  background: var(--board-bg);
+  border: 1px solid var(--board-border);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 4px 6px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.controls-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  margin-top: 4px;
+}
+
+.controls-list li {
+  font-size: 12px;
+  color: var(--controls-text);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ---- High-score entry (game over / challenge end) ---- */
+.high-score-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.high-score-entry-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+
+#high-score-name-input {
+  width: 160px;
+  text-align: center;
+  background: var(--board-bg);
+  border: 1px solid var(--board-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+#high-score-save-btn {
+  background: var(--accent);
+  color: var(--restart-text);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 24px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s;
+}
+
+#high-score-save-btn:hover {
+  background: #9bbdff;
+}
+
+/* ---- High-scores table (mode select) ---- */
+.high-scores-section {
+  margin-top: 16px;
+  width: 100%;
+}
+
+.high-scores-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--panel-label);
+  margin-bottom: 6px;
+}
+
+.high-scores-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.high-scores-table th,
+.high-scores-table td {
+  padding: 4px 8px;
+  text-align: center;
+}
+
+.high-scores-table th {
+  color: var(--panel-label);
+  font-weight: 700;
+  border-bottom: 1px solid var(--board-border);
+}
+
+.high-scores-table td {
+  color: var(--text);
+}
+
+.high-scores-empty {
+  color: var(--controls-text);
+  font-style: italic;
+}
+
+.high-score-new {
+  background: rgba(122, 162, 247, 0.25);
+  font-weight: 700;
+}
+
+.high-scores-reset-btn {
+  margin-top: 10px;
+  background: transparent;
+  color: var(--controls-text);
+  border: 1px solid var(--board-border);
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.high-scores-reset-btn:hover {
+  background: var(--board-bg);
+  color: var(--text);
 }
