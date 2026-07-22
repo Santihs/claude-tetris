@@ -320,6 +320,23 @@ kbd {
   margin-top: 4px;
 }
 
+.pause-btn {
+  background: var(--accent);
+  color: var(--restart-text);
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s;
+}
+
+.pause-btn:hover {
+  background: #9bbdff;
+}
+
 .pause-level-select {
   display: flex;
   flex-direction: column;
