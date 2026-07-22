@@ -29,6 +29,13 @@ const overlay = document.getElementById('overlay')!;
 const overlayTitle = document.getElementById('overlay-title')!;
 const overlayScore = document.getElementById('overlay-score')!;
 const restartBtn = document.getElementById('restart-btn')!;
+const gameOverBox = document.getElementById('game-over-box')!;
+const pauseMenuBox = document.getElementById('pause-menu-box')!;
+const pauseResumeBtn = document.getElementById('pause-resume-btn')!;
+const pauseRestartBtn = document.getElementById('pause-restart-btn')!;
+const pauseControlsBtn = document.getElementById('pause-controls-btn')!;
+const pauseControlsList = document.getElementById('pause-controls-list')!;
+const pauseLevelInput = document.getElementById('pause-level-input') as HTMLInputElement;
 const themeToggleBtn = document.getElementById('theme-toggle')!;
 const themeIcon = document.getElementById('theme-icon')!;
 
@@ -38,13 +45,23 @@ const refs: GameRefs = {
   skillBarFillEl, skillOverlay, queuePreviewCanvas, queuePreviewCtx, queuePreviewSection,
   objectiveSection, objectiveLabelEl, objectiveValueEl, modeSelect,
   scoreEl, linesEl, levelEl,
-  overlay, overlayTitle, overlayScore,
+  overlay, overlayTitle, overlayScore, gameOverBox, pauseMenuBox, pauseLevelInput,
 };
 
 const game = new Game(refs);
 
 restartBtn.addEventListener('click', () => game.restart());
 bindInput(game);
+
+pauseResumeBtn.addEventListener('click', () => game.togglePause());
+pauseRestartBtn.addEventListener('click', () => game.restart());
+pauseControlsBtn.addEventListener('click', () => {
+  const nowHidden = pauseControlsList.classList.toggle('hidden');
+  pauseControlsBtn.setAttribute('aria-expanded', String(!nowHidden));
+});
+pauseLevelInput.addEventListener('change', () => {
+  game.setPendingStartLevel(Number(pauseLevelInput.value));
+});
 
 for (const btn of modeSelect.querySelectorAll<HTMLButtonElement>('.mode-btn')) {
   btn.addEventListener('click', () => {

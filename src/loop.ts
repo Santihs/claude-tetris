@@ -14,6 +14,7 @@ import {
   startObjective, updateObjective, insertGarbageRow, applyPresetBlocks,
   type ObjectiveId, type ObjectiveState,
 } from './challenge';
+import { clampLevel, dropIntervalForLevel } from './level';
 import type { Board, Piece } from './types';
 
 export type GameMode = 'endless' | 'challenge';
@@ -40,6 +41,9 @@ export interface GameRefs extends HudRefs {
   overlay: HTMLElement;
   overlayTitle: HTMLElement;
   overlayScore: HTMLElement;
+  gameOverBox: HTMLElement;
+  pauseMenuBox: HTMLElement;
+  pauseLevelInput: HTMLInputElement;
 }
 
 export interface UndoSnapshot {
@@ -84,6 +88,8 @@ export class Game {
   gameMode: GameMode = 'endless';
   objective: ObjectiveState | null = null;
   started = false;
+  /** Starting level chosen from the pause menu's level selector; applied by init() on the next new game/restart. */
+  pendingStartLevel = 1;
   score = 0;
   lines = 0;
   level = 1;
@@ -96,6 +102,12 @@ export class Game {
   gridLineColor = '#22222e';
 
   constructor(public refs: GameRefs) {}
+
+  /** Called from the pause menu's level-select input; clamps into [1, 15] and stores for the next init(). */
+  setPendingStartLevel(level: number): void {
+    this.pendingStartLevel = clampLevel(level);
+    this.refs.pauseLevelInput.value = String(this.pendingStartLevel);
+  }
 
   spawn(): void {
     this.current = this.queue.shift()!;
@@ -307,6 +319,8 @@ export class Game {
       this.refs.overlayTitle.textContent = 'GAME OVER';
     }
     this.refs.overlayScore.textContent = `Puntuación: ${this.score.toLocaleString()}`;
+    this.refs.pauseMenuBox.classList.add('hidden');
+    this.refs.gameOverBox.classList.remove('hidden');
     this.refs.overlay.classList.remove('hidden');
   }
 
@@ -314,12 +328,15 @@ export class Game {
     if (!this.started || this.gameOver || this.skillMenuOpen) return;
     this.paused = !this.paused;
     if (!this.paused) {
+      this.refs.overlay.classList.add('hidden');
+      this.refs.pauseMenuBox.classList.add('hidden');
       this.lastTime = performance.now();
       this.loop(this.lastTime);
     } else {
       cancelAnimationFrame(this.animId);
-      this.refs.overlayTitle.textContent = 'PAUSA';
-      this.refs.overlayScore.textContent = '';
+      this.refs.pauseLevelInput.value = String(this.pendingStartLevel);
+      this.refs.gameOverBox.classList.add('hidden');
+      this.refs.pauseMenuBox.classList.remove('hidden');
       this.refs.overlay.classList.remove('hidden');
     }
   }
@@ -402,10 +419,10 @@ export class Game {
     this.board = createBoard();
     this.score = 0;
     this.lines = 0;
-    this.level = 1;
+    this.level = this.pendingStartLevel;
     this.paused = false;
     this.gameOver = false;
-    this.dropInterval = 1000;
+    this.dropInterval = dropIntervalForLevel(this.pendingStartLevel);
     this.dropAccum = 0;
     this.lastTime = performance.now();
     this.hold = null;
@@ -440,6 +457,8 @@ export class Game {
     this.drawHold();
     this.updateHUD();
     this.refs.overlay.classList.add('hidden');
+    this.refs.pauseMenuBox.classList.add('hidden');
+    this.refs.gameOverBox.classList.remove('hidden');
     cancelAnimationFrame(this.animId);
     this.animId = requestAnimationFrame(this.loop);
   }
@@ -472,6 +491,8 @@ export class Game {
     cancelAnimationFrame(this.animId);
     this.refs.overlayTitle.textContent = this.objective.status === 'won' ? '¡OBJETIVO CUMPLIDO!' : 'DESAFÍO FALLIDO';
     this.refs.overlayScore.textContent = `Puntuación: ${this.score.toLocaleString()}`;
+    this.refs.pauseMenuBox.classList.add('hidden');
+    this.refs.gameOverBox.classList.remove('hidden');
     this.refs.overlay.classList.remove('hidden');
   }
 
@@ -479,10 +500,12 @@ export class Game {
   restart(): void {
     if (this.gameMode === 'challenge') {
       this.started = false;
+      this.paused = false;
       this.gameMode = 'endless';
       this.objective = null;
       cancelAnimationFrame(this.animId);
       this.refs.overlay.classList.add('hidden');
+      this.refs.pauseMenuBox.classList.add('hidden');
       this.refs.objectiveSection.classList.add('hidden');
       this.refs.modeSelect.classList.remove('hidden');
     } else {
