@@ -1,4 +1,5 @@
 import { COLS, ROWS, LINE_SCORES } from './constants';
+import { dropIntervalForLevel } from './level';
 import type { Board, Shape } from './types';
 
 export function createBoard(): Board {
@@ -46,14 +47,14 @@ export function clearLines(board: Board, lines: number, level: number): ClearLin
   }
   let linesAfter = lines;
   let levelAfter = level;
-  let dropIntervalAfter = Math.max(100, 1000 - (level - 1) * 90);
+  let dropIntervalAfter = dropIntervalForLevel(level);
   let scoreDelta = 0;
   let isPerfectClear = false;
   if (cleared) {
     linesAfter = lines + cleared;
     scoreDelta = (LINE_SCORES[cleared] || 0) * level;
     levelAfter = Math.floor(linesAfter / 10) + 1;
-    dropIntervalAfter = Math.max(100, 1000 - (levelAfter - 1) * 90);
+    dropIntervalAfter = dropIntervalForLevel(levelAfter);
     isPerfectClear = board.every(row => row.every(v => v === 0));
   }
   return { cleared, scoreDelta, linesAfter, levelAfter, dropIntervalAfter, isPerfectClear };
