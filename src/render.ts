@@ -1,6 +1,67 @@
-import { BLOCK, COLORS, COLS, ROWS } from './constants';
+import { BLOCK, COLS, ROWS } from './constants';
 import { collide } from './board';
+import { getPaletteColor, getSkin } from './skin';
 import type { Board, Piece, Shape } from './types';
+
+function drawRoundedRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  radius: number,
+): void {
+  const r = Math.min(radius, w / 2, h / 2);
+  context.beginPath();
+  context.moveTo(x + r, y);
+  context.arcTo(x + w, y, x + w, y + h, r);
+  context.arcTo(x + w, y + h, x, y + h, r);
+  context.arcTo(x, y + h, x, y, r);
+  context.arcTo(x, y, x + w, y, r);
+  context.closePath();
+}
+
+function drawRetroBlock(context: CanvasRenderingContext2D, px: number, py: number, size: number, color: string): void {
+  context.fillStyle = color;
+  context.fillRect(px, py, size - 2, size - 2);
+  context.fillStyle = 'rgba(255,255,255,0.12)';
+  context.fillRect(px, py, size - 2, 4);
+}
+
+function drawNeonBlock(context: CanvasRenderingContext2D, px: number, py: number, size: number, color: string): void {
+  context.save();
+  context.shadowColor = color;
+  context.shadowBlur = Math.max(6, size * 0.5);
+  context.fillStyle = color;
+  context.fillRect(px, py, size - 2, size - 2);
+  context.shadowBlur = 0;
+  context.strokeStyle = 'rgba(255,255,255,0.6)';
+  context.lineWidth = 1;
+  context.strokeRect(px + 1, py + 1, size - 4, size - 4);
+  context.restore();
+}
+
+function drawPastelBlock(context: CanvasRenderingContext2D, px: number, py: number, size: number, color: string): void {
+  const radius = Math.max(3, size * 0.25);
+  context.fillStyle = color;
+  drawRoundedRect(context, px, py, size - 2, size - 2, radius);
+  context.fill();
+  context.fillStyle = 'rgba(255,255,255,0.35)';
+  drawRoundedRect(context, px, py, size - 2, (size - 2) / 2, radius);
+  context.fill();
+}
+
+function drawPixelBlock(context: CanvasRenderingContext2D, px: number, py: number, size: number, color: string): void {
+  const inset = Math.max(2, Math.floor(size / 6));
+  context.fillStyle = color;
+  context.fillRect(px, py, size - 2, size - 2);
+  context.fillStyle = 'rgba(255,255,255,0.3)';
+  context.fillRect(px, py, size - 2, inset);
+  context.fillRect(px, py, inset, size - 2);
+  context.fillStyle = 'rgba(0,0,0,0.35)';
+  context.fillRect(px, py + (size - 2) - inset, size - 2, inset);
+  context.fillRect(px + (size - 2) - inset, py, inset, size - 2);
+}
 
 export function drawBlock(
   context: CanvasRenderingContext2D,
@@ -11,12 +72,27 @@ export function drawBlock(
   alpha?: number,
 ): void {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
+  const skin = getSkin();
+  const color = getPaletteColor(colorIndex, skin);
+  if (!color) return;
+  const px = x * size + 1;
+  const py = y * size + 1;
   context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color as string;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+  switch (skin) {
+    case 'neon':
+      drawNeonBlock(context, px, py, size, color);
+      break;
+    case 'pastel':
+      drawPastelBlock(context, px, py, size, color);
+      break;
+    case 'pixel':
+      drawPixelBlock(context, px, py, size, color);
+      break;
+    case 'retro':
+    default:
+      drawRetroBlock(context, px, py, size, color);
+      break;
+  }
   context.globalAlpha = 1;
 }
 
