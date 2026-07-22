@@ -14,6 +14,7 @@ import {
   startObjective, updateObjective, insertGarbageRow, applyPresetBlocks,
   type ObjectiveId, type ObjectiveState,
 } from './challenge';
+import { qualifiesForHighScore, addHighScore, renderHighScores, type HighScoreEntry } from './scores';
 import type { Board, Piece } from './types';
 
 export type GameMode = 'endless' | 'challenge';
@@ -40,6 +41,11 @@ export interface GameRefs extends HudRefs {
   overlay: HTMLElement;
   overlayTitle: HTMLElement;
   overlayScore: HTMLElement;
+  restartBtn: HTMLElement;
+  highScoreEntryEl: HTMLElement;
+  highScoreNameInput: HTMLInputElement;
+  highScoreSaveBtn: HTMLButtonElement;
+  highScoresTableBody: HTMLElement;
 }
 
 export interface UndoSnapshot {
@@ -73,6 +79,8 @@ export class Game {
   slowTimeUntil: number | null = null;
   peekUntil: number | null = null;
   comboCount = 0;
+  maxCombo = 0;
+  highScoreQualified = false;
   lastClearWasTetris = false;
   lastActionWasRotation = false;
   lastTSpinFlag = false;
@@ -177,6 +185,7 @@ export class Game {
       this.dropInterval = result.dropIntervalAfter;
 
       this.comboCount++;
+      this.maxCombo = Math.max(this.maxCombo, this.comboCount - 1);
       const isTetris = result.cleared === 4;
       const isBackToBack = isTetris && this.lastClearWasTetris;
 
@@ -308,6 +317,31 @@ export class Game {
     }
     this.refs.overlayScore.textContent = `Puntuación: ${this.score.toLocaleString()}`;
     this.refs.overlay.classList.remove('hidden');
+    this.checkHighScoreQualification();
+  }
+
+  private checkHighScoreQualification(): void {
+    this.highScoreQualified = qualifiesForHighScore(this.score);
+    this.refs.highScoreEntryEl.classList.toggle('hidden', !this.highScoreQualified);
+    this.refs.restartBtn.classList.toggle('hidden', this.highScoreQualified);
+    if (this.highScoreQualified) {
+      this.refs.highScoreNameInput.value = '';
+      this.refs.highScoreNameInput.focus();
+    }
+  }
+
+  /** Called by the name-entry Save button/Enter key once a run qualifies for the top-5. */
+  submitHighScoreName(rawName: string): void {
+    if (!this.highScoreQualified) return;
+    const name = rawName.trim().slice(0, 12) || 'AAA';
+    const entry: HighScoreEntry = {
+      name, score: this.score, lines: this.lines, maxCombo: this.maxCombo, date: new Date().toISOString(),
+    };
+    const updated = addHighScore(entry);
+    renderHighScores(this.refs.highScoresTableBody, updated, updated.indexOf(entry));
+    this.highScoreQualified = false;
+    this.refs.highScoreEntryEl.classList.add('hidden');
+    this.refs.restartBtn.classList.remove('hidden');
   }
 
   togglePause(): void {
@@ -418,6 +452,8 @@ export class Game {
     this.slowTimeUntil = null;
     this.peekUntil = null;
     this.comboCount = 0;
+    this.maxCombo = 0;
+    this.highScoreQualified = false;
     this.lastClearWasTetris = false;
     this.lastActionWasRotation = false;
     this.lastTSpinFlag = false;
@@ -428,6 +464,8 @@ export class Game {
     this.started = true;
     this.refs.skillOverlay.classList.add('hidden');
     this.refs.modeSelect.classList.add('hidden');
+    this.refs.highScoreEntryEl.classList.add('hidden');
+    this.refs.restartBtn.classList.remove('hidden');
     this.updateSkillBar();
 
     this.gameMode = mode;
@@ -473,6 +511,7 @@ export class Game {
     this.refs.overlayTitle.textContent = this.objective.status === 'won' ? '¡OBJETIVO CUMPLIDO!' : 'DESAFÍO FALLIDO';
     this.refs.overlayScore.textContent = `Puntuación: ${this.score.toLocaleString()}`;
     this.refs.overlay.classList.remove('hidden');
+    this.checkHighScoreQualification();
   }
 
   /** Restart button: endless mode restarts endless, challenge mode returns to mode-select. */

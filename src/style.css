@@ -285,3 +285,110 @@ kbd {
   gap: 8px;
   margin-top: 10px;
 }
+
+/* ---- High-score entry (game over / challenge end) ---- */
+.high-score-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.high-score-entry-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 1px;
+}
+
+#high-score-name-input {
+  width: 160px;
+  text-align: center;
+  background: var(--board-bg);
+  border: 1px solid var(--board-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+#high-score-save-btn {
+  background: var(--accent);
+  color: var(--restart-text);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 24px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.15s;
+}
+
+#high-score-save-btn:hover {
+  background: #9bbdff;
+}
+
+/* ---- High-scores table (mode select) ---- */
+.high-scores-section {
+  margin-top: 16px;
+  width: 100%;
+}
+
+.high-scores-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--panel-label);
+  margin-bottom: 6px;
+}
+
+.high-scores-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.high-scores-table th,
+.high-scores-table td {
+  padding: 4px 8px;
+  text-align: center;
+}
+
+.high-scores-table th {
+  color: var(--panel-label);
+  font-weight: 700;
+  border-bottom: 1px solid var(--board-border);
+}
+
+.high-scores-table td {
+  color: var(--text);
+}
+
+.high-scores-empty {
+  color: var(--controls-text);
+  font-style: italic;
+}
+
+.high-score-new {
+  background: rgba(122, 162, 247, 0.25);
+  font-weight: 700;
+}
+
+.high-scores-reset-btn {
+  margin-top: 10px;
+  background: transparent;
+  color: var(--controls-text);
+  border: 1px solid var(--board-border);
+  border-radius: 6px;
+  padding: 6px 16px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.high-scores-reset-btn:hover {
+  background: var(--board-bg);
+  color: var(--text);
+}
